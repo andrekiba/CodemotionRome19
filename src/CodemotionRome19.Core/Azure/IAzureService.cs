@@ -2,12 +2,13 @@
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Models;
+using Microsoft.Azure.Management.Fluent;
 
 namespace CodemotionRome19.Core.Azure
 {
     public interface IAzureService
     {
-        Microsoft.Azure.Management.Fluent.Azure.IAuthenticated Authenticated { get; }
+        IAzure Azure { get; }
 
         DeploymentOptions DeploymentOptions { get; set; }
 
@@ -16,5 +17,7 @@ namespace CodemotionRome19.Core.Azure
         Task<IEnumerable<ResourceGroup>> GetResourceGroupsAsync();
 
         Task<IEnumerable<Ubication>> GetRegionsAsync();
+
+        Task<IAzure> Authenticate(string clientId, string clientSecret, string tenantId, string subscriptionId);
     }
 }

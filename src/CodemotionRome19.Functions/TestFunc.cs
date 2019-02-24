@@ -1,30 +1,47 @@
+using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using CodemotionRome19.Core.Azure;
+using CodemotionRome19.Core.Models;
+using CodemotionRome19.Functions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace CodemotionRome19.Functions
 {
-    public static class TestFunc
+    public class TestFunc
     {
+        readonly AppSettings appSettings;
+        readonly IAzureService azureService;
+
+        public TestFunc(AppSettings appSettings, IAzureService azureService)
+        {
+            this.appSettings = appSettings;
+            this.azureService = azureService;
+        }
+
         [FunctionName("TestFunc")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ExecutionContext context,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(context.FunctionAppDirectory)
-                .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
-                .Build();
+            try
+            {
+                var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId, appSettings.SubscriptionId);
+                var resourceGroups = azure.ResourceGroups.List();
+                var subscriptions = azure.Subscriptions.List();
+            }
+            catch (Exception e)
+            {
+                log.LogError(e, "Azzzz!!!!");
+            }
 
             string name = req.Query["name"];
 

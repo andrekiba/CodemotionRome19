@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Models;
+using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
@@ -13,33 +14,22 @@ namespace CodemotionRome19.Core.Azure
 {
     public class AzureService : IAzureService
     {
-        readonly string clientId;
-        readonly string clientSecret;
-        readonly string tenantId;
-        readonly string subscriptionId;
-
         public AzureService()
         {
-            clientId = "";
-            clientSecret = "";
-            tenantId = "";
-            subscriptionId = "";
-
-            Authenticate();
         }
 
-        public Microsoft.Azure.Management.Fluent.Azure.IAuthenticated Authenticated { get; private set; }
+        public IAzure Azure { get; private set; }
 
         public DeploymentOptions DeploymentOptions { get; set; } = DeploymentOptions.Default;
 
         public async Task<IEnumerable<Subscription>> GetSubscriptionsAsync()
         {
-            if (Authenticated == null)
+            if (Azure == null)
             {
                 return Enumerable.Empty<Subscription>();
             }
 
-            var subscriptionsList = await Authenticated.Subscriptions.ListAsync().ConfigureAwait(false);
+            var subscriptionsList = await Azure.Subscriptions.ListAsync();
 
             return subscriptionsList.Select(s => new Subscription
             {
@@ -50,8 +40,7 @@ namespace CodemotionRome19.Core.Azure
 
         public Task<IEnumerable<ResourceGroup>> GetResourceGroupsAsync()
         {
-            var groups = Authenticated
-                .WithSubscription(subscriptionId)
+            var groups = Azure
                 .ResourceGroups
                 .List();
 
@@ -76,20 +65,31 @@ namespace CodemotionRome19.Core.Azure
             return Task.FromResult(regions.AsEnumerable());
         }
 
-        private void Authenticate()
+        public Task<IAzure> Authenticate(string clientId, string clientSecret, string tenantId, string subscriptionid)
         {
-            var credentials = SdkContext
-                       .AzureCredentialsFactory
-                       .FromServicePrincipal(
-                           clientId,
-                           clientSecret,
-                           tenantId,
-                           AzureEnvironment.AzureGlobalCloud);
+            try
+            {
+                var credentials = SdkContext
+                    .AzureCredentialsFactory
+                    .FromServicePrincipal(
+                        clientId,
+                        clientSecret,
+                        tenantId,
+                        AzureEnvironment.AzureGlobalCloud);
 
-            Authenticated = Microsoft.Azure.Management.Fluent.Azure
-                .Configure()
-                .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
-                .Authenticate(credentials);
+                Azure = Microsoft.Azure.Management.Fluent.Azure
+                    .Configure()
+                    .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
+                    .Authenticate(credentials)
+                    .WithSubscription(subscriptionid);
+
+                return Task.FromResult(Azure);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }            
         }
 
         static async Task<T> ExecuteAsync<T>(Func<Task<T>> func)
