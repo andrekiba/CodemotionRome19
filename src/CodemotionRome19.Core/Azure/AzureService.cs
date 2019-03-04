@@ -9,6 +9,7 @@ using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure
 {
@@ -19,6 +20,7 @@ namespace CodemotionRome19.Core.Azure
         }
 
         public IAzure Azure { get; private set; }
+        public IAuthenticated Auth { get; private set; }
 
         public DeploymentOptions DeploymentOptions { get; set; } = DeploymentOptions.Default;
 
@@ -65,7 +67,7 @@ namespace CodemotionRome19.Core.Azure
             return Task.FromResult(regions.AsEnumerable());
         }
 
-        public Task<IAzure> Authenticate(string clientId, string clientSecret, string tenantId, string subscriptionid)
+        public Task<IAzure> AuthenticateAzure(string clientId, string clientSecret, string tenantId, string subscriptionid)
         {
             try
             {
@@ -90,6 +92,32 @@ namespace CodemotionRome19.Core.Azure
                 Console.WriteLine(e);
                 throw;
             }            
+        }
+
+        public Task<IAuthenticated> Authenticate(string clientId, string clientSecret, string tenantId)
+        {
+            try
+            {
+                var credentials = SdkContext
+                    .AzureCredentialsFactory
+                    .FromServicePrincipal(
+                        clientId,
+                        clientSecret,
+                        tenantId,
+                        AzureEnvironment.AzureGlobalCloud);
+
+                Auth = Microsoft.Azure.Management.Fluent.Azure
+                    .Configure()
+                    .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
+                    .Authenticate(credentials);
+
+                return Task.FromResult(Auth);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         static async Task<T> ExecuteAsync<T>(Func<Task<T>> func)

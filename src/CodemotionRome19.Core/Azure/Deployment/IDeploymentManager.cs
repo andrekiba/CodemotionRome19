@@ -15,5 +15,10 @@ namespace CodemotionRome19.Core.Azure.Deployment
             Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
             DeploymentOptions options, 
             IEnumerable<AzureResource> resources);
+
+        void Deploy(
+            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            DeploymentOptions options,
+            AzureResource resource);
     }
 }

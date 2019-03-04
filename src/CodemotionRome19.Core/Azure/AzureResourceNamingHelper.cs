@@ -22,12 +22,13 @@ namespace CodemotionRome19.Core.Azure
         public const string AzureFunctions = "Azure Functions";
         public const string WebApps = "Web Apps";
         public const string KeyVault = "Key Vault";
+        public const string VirtualMachine = "Virtual Machine";
 
-        static readonly Regex resourceGroupNameRegex = new Regex(@"^[-\w\._\(\)]+$", RegexOptions.Compiled);
+        static readonly Regex ResourceGroupNameRegex = new Regex(@"^[-\w\._\(\)]+$", RegexOptions.Compiled);
 
         public static bool CheckResourceGroupName(string candidate)
         {
-            return resourceGroupNameRegex.IsMatch(candidate ?? string.Empty);
+            return ResourceGroupNameRegex.IsMatch(candidate ?? string.Empty);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
             {
                 Region = Region.EuropeWest,
                 ResourceGroupName = "CodemotionRome19",
-                UseExistingResourceGroup = false,
+                UseExistingResourceGroup = false
             };
     }
 }

@@ -21,7 +21,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
         {
             foreach (var resource in resources)
             {
-                Task.Factory.StartNew(async () =>
+                Task.Run(async () =>
                 {
                     try
                     {
@@ -40,7 +40,30 @@ namespace CodemotionRome19.Core.Azure.Deployment
             }
         }
 
-        Task CreateResourceAsync(
+        public void Deploy(
+            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            DeploymentOptions options,
+            AzureResource resource)
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    Started?.Invoke(this, new DeploymentEventArgs(resource));
+
+                    await CreateResourceAsync(azure, options, resource.Type);
+
+                    Finished?.Invoke(this, new DeploymentEventArgs(resource));
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error creating resource of type {resource.Type}: {ex}");
+                    Failed?.Invoke(this, new DeploymentErrorEventArgs(resource, ex));
+                }
+            });
+        }
+
+        static Task CreateResourceAsync(
             Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
             DeploymentOptions options,
             AzureResourceType resourceType)
@@ -69,26 +92,28 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 case AzureResourceType.KeyVault:
                     deployment = new KeyVaultDeployment(resourceName, azure, options);
                     break;
+                case AzureResourceType.VirtualMachine:
+                    deployment = new VirtualMachineDeployment(resourceName, azure, options);
+                    break;
                 default:
                     Debug.WriteLine($"Service of type {resourceType} not supported!");
                     break;
             }
 
-            return deployment != null
-                ? deployment.CreateAsync()
-                : Task.CompletedTask;
+            return deployment?.CreateAsync() ?? Task.CompletedTask;
         }
 
         static string GetRandomResourceName(AzureResourceType resourceType)
         {
             const int maxNameLength = 20;
 
-            const string CosmosDBPrefix = "cosmos-";
-            const string FunctionsPrefix = "function-";
-            const string StoragePrefix = "storage";
-            const string WebAppPrefix = "web-";
-            const string SqlPrefix = "sql-";
-            const string KvPrefix = "vault-";
+            const string cosmosDBPrefix = "cosmos-";
+            const string functionsPrefix = "function-";
+            const string storagePrefix = "storage";
+            const string webAppPrefix = "web-";
+            const string sqlPrefix = "sql-";
+            const string kvPrefix = "vault-";
+            const string vmPrefix = "vm-";
 
             var prefix = string.Empty;
 
@@ -96,22 +121,25 @@ namespace CodemotionRome19.Core.Azure.Deployment
             {
                 case AzureResourceType.AppService:
                 case AzureResourceType.WebApp:
-                    prefix = WebAppPrefix;
+                    prefix = webAppPrefix;
                     break;
                 case AzureResourceType.Storage:
-                    prefix = StoragePrefix;
+                    prefix = storagePrefix;
                     break;
                 case AzureResourceType.CosmosDB:
-                    prefix = CosmosDBPrefix;
+                    prefix = cosmosDBPrefix;
                     break;
                 case AzureResourceType.Functions:
-                    prefix = FunctionsPrefix;
+                    prefix = functionsPrefix;
                     break;
                 case AzureResourceType.SqlDatabase:
-                    prefix = SqlPrefix;
+                    prefix = sqlPrefix;
                     break;
                 case AzureResourceType.KeyVault:
-                    prefix = KvPrefix;
+                    prefix = kvPrefix;
+                    break;
+                case AzureResourceType.VirtualMachine:
+                    prefix = vmPrefix;
                     break;
             }
 

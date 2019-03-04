@@ -6,14 +6,14 @@ namespace CodemotionRome19.Core.Azure
 {
     public class AzureResourceManager
     {
-        static readonly Lazy<AzureResourceManager> lazy = new Lazy<AzureResourceManager>(() => new AzureResourceManager());
+        static readonly Lazy<AzureResourceManager> Lazy = new Lazy<AzureResourceManager>(() => new AzureResourceManager());
 
         AzureResourceManager()
         {
             InitializeResources();
         }
 
-        public static AzureResourceManager Instance => lazy.Value;
+        public static AzureResourceManager Instance => Lazy.Value;
 
         public List<AzureResource> AvailableResources { get; private set; }
 
@@ -147,6 +147,13 @@ namespace CodemotionRome19.Core.Azure
                     Type = AzureResourceType.KeyVault,
                     Name = AzureResourceNamingHelper.KeyVault,
                     Description = AzureResourceNamingHelper.KeyVault,
+                    IsAvailable = true,
+                },
+                new AzureResource
+                {
+                    Type = AzureResourceType.VirtualMachine,
+                    Name = AzureResourceNamingHelper.VirtualMachine,
+                    Description = AzureResourceNamingHelper.VirtualMachine,
                     IsAvailable = true,
                 }
             };

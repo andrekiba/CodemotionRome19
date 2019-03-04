@@ -63,7 +63,7 @@ namespace CodemotionRome19.Functions
                         else
                         {
                             // Processes request according to intentRequest.Intent.Name...
-                            response = await GetResponse(intentRequest, log);
+                            response = GetResponse(intentRequest, log);
                         }
 
                         break;
@@ -104,30 +104,27 @@ namespace CodemotionRome19.Functions
             return (response != null, response);
         }
 
-        static async Task<SkillResponse> GetResponse(IntentRequest request, ILogger log)
+        static SkillResponse GetResponse(IntentRequest request, ILogger log)
         {
             try
             {
                 SkillResponse response = null;
 
-                //switch (request.Intent.Name)
-                //{
-                //    case "NextEventIntent":
-                //        var reprompt = new Reprompt
-                //        {
-                //            OutputSpeech = new PlainTextOutputSpeech
-                //            {
-                //                Text = "Desideri sapere altro?"
-                //            }
-                //        };
-                //        response = ResponseBuilder.Ask($"Il prossimo KLab sarà il {eventData.LocalDate} alle ore {eventData.LocalTime} presso {eventData.Venue.Name}", reprompt);
-                //        break;
-                //    case "NextEventDetailsIntent":
-                //        response = ResponseBuilder.Tell($"Ecco i dettagli dell'evento.\n\r{StripEventDescription(eventData.Description)}");
-                //        break;
-                //    default:
-                //        break;
-                //}
+                switch (request.Intent.Name)
+                {
+                    case "CreateAzureResourceIntent":
+                        var reprompt = new Reprompt
+                        {
+                            OutputSpeech = new PlainTextOutputSpeech
+                            {
+                                Text = "Confermi?"
+                            }
+                        };
+                        response = ResponseBuilder.Ask($"Sto per creare la risorsa {request.Intent.Slots["AzureResource"].Value}, ti avviserò quando ho terminato", reprompt);
+                        break;
+                    default:
+                        break;
+                }
 
                 return response;
 

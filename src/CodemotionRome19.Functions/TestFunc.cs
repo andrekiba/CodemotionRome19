@@ -3,10 +3,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure;
+using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Functions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
@@ -18,11 +20,13 @@ namespace CodemotionRome19.Functions
     {
         readonly AppSettings appSettings;
         readonly IAzureService azureService;
+        readonly IDeploymentManager deploymentManager;
 
-        public TestFunc(AppSettings appSettings, IAzureService azureService)
+        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentManager deploymentManager)
         {
             this.appSettings = appSettings;
             this.azureService = azureService;
+            this.deploymentManager = deploymentManager;
         }
 
         [FunctionName("TestFunc")]
@@ -34,9 +38,18 @@ namespace CodemotionRome19.Functions
 
             try
             {
-                var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId, appSettings.SubscriptionId);
-                var resourceGroups = azure.ResourceGroups.List();
+                var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
+                var resourceGroups = azure.WithSubscription(appSettings.SubscriptionId).ResourceGroups.List();
                 var subscriptions = azure.Subscriptions.List();
+
+                var funcDeployOptions = new DeploymentOptions
+                {
+                    Region = Region.EuropeWest,
+                    ResourceGroupName = "TestCodemotionRome19",
+                    UseExistingResourceGroup = false,
+                };
+
+                deploymentManager.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
             }
             catch (Exception e)
             {
