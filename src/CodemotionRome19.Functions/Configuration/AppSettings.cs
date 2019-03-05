@@ -8,6 +8,8 @@ namespace CodemotionRome19.Functions.Configuration
         public string ClientSecret { get; }
         public string TenantId { get; }
         public string SubscriptionId { get; }
+        public string AldoClientId { get; }
+        public string AldoClientSecret { get; }
 
         public AppSettings()
         {
@@ -21,6 +23,9 @@ namespace CodemotionRome19.Functions.Configuration
             ClientSecret = config.GetValue<string>("ClientSecret");
             TenantId = config.GetValue<string>("TenantId");
             SubscriptionId = config.GetValue<string>("SubscriptionId");
+            AldoClientId = config.GetValue<string>("AldoClientId");
+            AldoClientSecret = config.GetValue<string>("AldoClientSecret");
+
         }
     }
 }

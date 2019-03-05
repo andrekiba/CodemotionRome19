@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Alexa.NET;
+using Alexa.NET.ProactiveEvents;
+using Alexa.NET.ProactiveEvents.MessageReminders;
 using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
@@ -142,6 +144,22 @@ namespace CodemotionRome19.Functions
 
             var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
             var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource { Name = "SuperFunc" });
+
+            var messaging = new AccessTokenClient(AccessTokenClient.ApiDomainBaseAddress);
+            var token = (await messaging.Send(appSettings.AldoClientId, appSettings.AldoClientSecret)).Token;
+            var deployNotification =
+                new MessageReminder(
+                    new MessageReminderState(MessageReminderStatus.Unread, MessageReminderFreshness.New),
+                    new MessageReminderGroup("Aldo", 1, MessageReminderUrgency.Urgent));
+            var req = new BroadcastEventRequest(deployNotification)
+            {
+                ReferenceId = "broadcastTest",
+                ExpiryTime = DateTimeOffset.Now.AddMinutes(5),
+                TimeStamp = DateTimeOffset.Now
+            };
+            
+            var client = new ProactiveEventsClient(ProactiveEventsClient.EuropeEndpoint, token, true);
+            await client.Send(req);
 
             var response = ResponseBuilder.Ask($"Sto per creare la risorsa {request.Intent.Slots["AzureResource"].Value}", reprompt);
 
