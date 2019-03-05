@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Threading.Tasks;
+using CodemotionRome19.Core.Base;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {

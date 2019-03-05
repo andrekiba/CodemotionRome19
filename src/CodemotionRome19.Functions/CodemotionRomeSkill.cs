@@ -5,12 +5,14 @@ using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
+using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Functions.Configuration;
 using CodemotionRome19.Functions.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -20,11 +22,13 @@ namespace CodemotionRome19.Functions
     {
         readonly AppSettings appSettings;
         readonly IAzureService azureService;
+        readonly IDeploymentService deploymentService;
 
-        public CodemotionRomeSkill(AppSettings appSettings, IAzureService azureService)
+        public CodemotionRomeSkill(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
         {
             this.appSettings = appSettings;
             this.azureService = azureService;
+            this.deploymentService = deploymentService;
         }
 
         [FunctionName("CodemotionRomeSkill")]
@@ -50,22 +54,37 @@ namespace CodemotionRome19.Functions
                 {
                     case LaunchRequest launchRequest:
                         log.LogInformation("Session started");
-                        response = ResponseBuilder.Tell("Ciao! Benvenuto in Codemotion Roma.");
+                        response = ResponseBuilder.Tell("Ciao! sono Aldo, come posso aiutarti?");
                         response.Response.ShouldEndSession = false;
                         break;
                     case IntentRequest intentRequest:
                         // Checks whether to handle system messages defined by Amazon.
                         var systemIntentResponse = HandleSystemIntentRequest(intentRequest);
                         if (systemIntentResponse.IsHandled)
-                        {
                             response = systemIntentResponse.Response;
-                        }
                         else
                         {
-                            // Processes request according to intentRequest.Intent.Name...
-                            response = GetResponse(intentRequest, log);
+                            try
+                            {
+                                switch (intentRequest.Intent.Name)
+                                {
+                                    case "CreateAzureResourceIntent":
+                                        response = await HandleCreateAzureResourceIntent(intentRequest, log);
+                                        break;
+                                    case "AzureResourceNameIntent":
+                                        response = HandleAzureResourceNameIntent(intentRequest, log);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                var error = $"{e.Message}\n\r{e.StackTrace}";
+                                log.LogError(error);
+                                response = ResponseBuilder.Tell("Purtroppo non riesco a fare il deploy della risorsa richiesta.");
+                            }
                         }
-
                         break;
                     case SessionEndedRequest sessionEndedRequest:
                         log.LogInformation("Session ended");
@@ -104,37 +123,36 @@ namespace CodemotionRome19.Functions
             return (response != null, response);
         }
 
-        static SkillResponse GetResponse(IntentRequest request, ILogger log)
+        async Task<SkillResponse> HandleCreateAzureResourceIntent(IntentRequest request, ILogger log)
         {
-            try
+            var reprompt = new Reprompt
             {
-                SkillResponse response = null;
-
-                switch (request.Intent.Name)
+                OutputSpeech = new PlainTextOutputSpeech
                 {
-                    case "CreateAzureResourceIntent":
-                        var reprompt = new Reprompt
-                        {
-                            OutputSpeech = new PlainTextOutputSpeech
-                            {
-                                Text = "Confermi?"
-                            }
-                        };
-                        response = ResponseBuilder.Ask($"Sto per creare la risorsa {request.Intent.Slots["AzureResource"].Value}, ti avviserò quando ho terminato", reprompt);
-                        break;
-                    default:
-                        break;
+                    Text = "Confermi?"
                 }
+            };
 
-                return response;
-
-            }
-            catch (Exception e)
+            var funcDeployOptions = new DeploymentOptions
             {
-                var error = $"{e.Message}\n\r{e.StackTrace}";
-                log.LogError(error);
-                return ResponseBuilder.Tell("Purtroppo non riesco a fare il deploy della risorsa richiesta.");
-            }
+                Region = Region.EuropeWest,
+                ResourceGroupName = "TestCodemotionRome19",
+                UseExistingResourceGroup = true
+            };
+
+            var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
+            var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource { Name = "SuperFunc" });
+
+            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {request.Intent.Slots["AzureResource"].Value}", reprompt);
+
+            return response;
+        }
+
+        SkillResponse HandleAzureResourceNameIntent(IntentRequest request, ILogger log)
+        {
+            SkillResponse response = null;
+
+            return response;
         }
 
     }

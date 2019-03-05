@@ -15,7 +15,7 @@ namespace CodemotionRome19.Functions
         {
             builder.Services.AddSingleton<AppSettings>();
             builder.Services.AddTransient<IAzureService, AzureService>();
-            builder.Services.AddTransient<IDeploymentManager, DeploymentManager>();
+            builder.Services.AddTransient<IDeploymentService, DeploymentService>();
         }
     }
 }

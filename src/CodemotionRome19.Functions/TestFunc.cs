@@ -20,13 +20,13 @@ namespace CodemotionRome19.Functions
     {
         readonly AppSettings appSettings;
         readonly IAzureService azureService;
-        readonly IDeploymentManager deploymentManager;
+        readonly IDeploymentService deploymentService;
 
-        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentManager deploymentManager)
+        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
         {
             this.appSettings = appSettings;
             this.azureService = azureService;
-            this.deploymentManager = deploymentManager;
+            this.deploymentService = deploymentService;
         }
 
         [FunctionName("TestFunc")]
@@ -49,7 +49,7 @@ namespace CodemotionRome19.Functions
                     UseExistingResourceGroup = false,
                 };
 
-                deploymentManager.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
+                deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
             }
             catch (Exception e)
             {

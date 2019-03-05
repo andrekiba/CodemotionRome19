@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using CodemotionRome19.Core.Base;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
-    public class DeploymentManager : IDeploymentManager
+    public class DeploymentService : IDeploymentService
     {
         public event EventHandler<DeploymentEventArgs> Started;
 
@@ -40,27 +41,21 @@ namespace CodemotionRome19.Core.Azure.Deployment
             }
         }
 
-        public void Deploy(
+        public async Task<Result> Deploy(
             Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
             DeploymentOptions options,
             AzureResource resource)
-        {
-            Task.Run(async () =>
+        {           
+            try
             {
-                try
-                {
-                    Started?.Invoke(this, new DeploymentEventArgs(resource));
-
-                    await CreateResourceAsync(azure, options, resource.Type);
-
-                    Finished?.Invoke(this, new DeploymentEventArgs(resource));
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error creating resource of type {resource.Type}: {ex}");
-                    Failed?.Invoke(this, new DeploymentErrorEventArgs(resource, ex));
-                }
-            });
+                await CreateResourceAsync(azure, options, resource.Type);
+                return Result.Ok();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error creating resource of type {resource.Type}: {ex}");
+                return Result.Fail(ex.Message);
+            }
         }
 
         static Task CreateResourceAsync(

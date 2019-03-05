@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using CodemotionRome19.Core.Base;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
-    public interface IDeploymentManager
+    public interface IDeploymentService
     {
         event EventHandler<DeploymentEventArgs> Started;
 
@@ -16,7 +18,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
             DeploymentOptions options, 
             IEnumerable<AzureResource> resources);
 
-        void Deploy(
+        Task<Result> Deploy(
             Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
             DeploymentOptions options,
             AzureResource resource);
