@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Alexa.NET.ProactiveEvents;
 using Alexa.NET.ProactiveEvents.MessageReminders;
+using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Base;
 
 namespace CodemotionRome19.Core.Notification
@@ -19,7 +20,7 @@ namespace CodemotionRome19.Core.Notification
             this.clientSecret = clientSecret;
         }
 
-        public async Task<HttpResponseMessage> SendNotification(Result deployResult)
+        public async Task<HttpResponseMessage> SendNotification(AzureResource azureResource, Result deployResult)
         {
             var messaging = new AccessTokenClient(AccessTokenClient.ApiDomainBaseAddress);
             var token = (await messaging.Send(clientId, clientSecret)).Token;
@@ -34,7 +35,7 @@ namespace CodemotionRome19.Core.Notification
 
             #region UserEvent
 
-            var deployEvent = new NotificationEvent(new Dictionary<string, List<LocaleAttribute>>
+            var deployEvent = new NotificationEvent("DeployCompleted", new Dictionary<string, List<LocaleAttribute>>
             {
                 {"test", new List<LocaleAttribute>(new[] {new LocaleAttribute("it-IT", "thing"),})}
             });

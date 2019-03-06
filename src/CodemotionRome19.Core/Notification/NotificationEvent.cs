@@ -5,13 +5,12 @@ namespace CodemotionRome19.Core.Notification
 {
     public class NotificationEvent : ProactiveEvent
     {
-        private Dictionary<string, List<LocaleAttribute>> Locales { get; }
+        Dictionary<string, List<LocaleAttribute>> Locales { get; }
 
-        public NotificationEvent() : this(new Dictionary<string, List<LocaleAttribute>>()) { }
-
-        public NotificationEvent(Dictionary<string, List<LocaleAttribute>> locales) : base("NotificationEvent")
+        public NotificationEvent(string name = "NotificationEvent",
+            Dictionary<string, List<LocaleAttribute>> locales = null) : base(name)
         {
-            Locales = locales;
+            Locales = locales ?? new Dictionary<string, List<LocaleAttribute>>();
         }
 
         public override IEnumerable<KeyValuePair<string, List<LocaleAttribute>>> GetLocales()

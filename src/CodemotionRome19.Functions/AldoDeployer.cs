@@ -42,7 +42,7 @@ namespace CodemotionRome19.Functions
 
                 var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
                 var deployResult = await deploymentService.Deploy(azure, deployOptions, azureResource);
-                var notificationResult = await notificationService.SendNotification(deployResult);
+                var notificationResult = await notificationService.SendNotification(azureResource, deployResult);
             }
             catch (Exception e)
             {

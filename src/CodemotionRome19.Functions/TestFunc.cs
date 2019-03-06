@@ -18,11 +18,11 @@ namespace CodemotionRome19.Functions
 {
     public class TestFunc
     {
-        readonly AppSettings appSettings;
+        readonly Configuration.AppSettings appSettings;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
 
-        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
+        public TestFunc(Configuration.AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
         {
             this.appSettings = appSettings;
             this.azureService = azureService;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
@@ -15,8 +16,11 @@ namespace CodemotionRome19.Core.Azure
 {
     public class AzureService : IAzureService
     {
-        public AzureService()
+        readonly IAzureConfiguration azureConfiguration;
+
+        public AzureService(IAzureConfiguration azureConfiguration)
         {
+            this.azureConfiguration = azureConfiguration;
         }
 
         public IAzure Azure { get; private set; }
