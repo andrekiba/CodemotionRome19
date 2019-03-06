@@ -1,20 +1,18 @@
 using System;
 using System.Threading.Tasks;
 using Alexa.NET;
-using Alexa.NET.ProactiveEvents;
-using Alexa.NET.ProactiveEvents.MessageReminders;
 using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Functions.Alexa;
 using CodemotionRome19.Functions.Configuration;
 using CodemotionRome19.Functions.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -34,7 +32,8 @@ namespace CodemotionRome19.Functions
         }
 
         [FunctionName("CodemotionRomeSkill")]
-        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req, 
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req,
+            [Queue("azure-resources", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResource> azureResourceQueue,
             ILogger log)
         {
             var json = await req.ReadAsStringAsync();
@@ -70,11 +69,11 @@ namespace CodemotionRome19.Functions
                             {
                                 switch (intentRequest.Intent.Name)
                                 {
-                                    case "CreateAzureResourceIntent":
-                                        response = await HandleCreateAzureResourceIntent(intentRequest, log);
+                                    case Intents.CreateAzureResourceIntent:
+                                        response = await HandleCreateAzureResourceIntent(azureResourceQueue, intentRequest, log);
                                         break;
-                                    case "AzureResourceNameIntent":
-                                        response = HandleAzureResourceNameIntent(intentRequest, log);
+                                    case Intents.AzureResourceNameIntent:
+                                        response = await HandleAzureResourceNameIntent(azureResourceQueue, intentRequest, log);
                                         break;
                                     default:
                                         break;
@@ -125,8 +124,10 @@ namespace CodemotionRome19.Functions
             return (response != null, response);
         }
 
-        async Task<SkillResponse> HandleCreateAzureResourceIntent(IntentRequest request, ILogger log)
+        static async Task<SkillResponse> HandleCreateAzureResourceIntent(IAsyncCollector<AzureResource> azureResourceQueue, IntentRequest request, ILogger log)
         {
+            var slots = request.Intent.Slots;
+
             var reprompt = new Reprompt
             {
                 OutputSpeech = new PlainTextOutputSpeech
@@ -135,40 +136,29 @@ namespace CodemotionRome19.Functions
                 }
             };
 
-            var funcDeployOptions = new DeploymentOptions
+            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {slots[Slots.AzureResource].Value}", reprompt);
+
+            var azureResource = new AzureResource
             {
-                Region = Region.EuropeWest,
-                ResourceGroupName = "TestCodemotionRome19",
-                UseExistingResourceGroup = true
+                Type = (AzureResourceType) Enum.Parse(typeof(AzureResourceType), slots[Slots.AzureResource].Value),
+                Name = slots[Slots.AzureResourceName].Value
             };
 
-            var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
-            var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource { Name = "SuperFunc" });
-
-            var messaging = new AccessTokenClient(AccessTokenClient.ApiDomainBaseAddress);
-            var token = (await messaging.Send(appSettings.AldoClientId, appSettings.AldoClientSecret)).Token;
-            var deployNotification =
-                new MessageReminder(
-                    new MessageReminderState(MessageReminderStatus.Unread, MessageReminderFreshness.New),
-                    new MessageReminderGroup("Aldo", 1, MessageReminderUrgency.Urgent));
-            var req = new BroadcastEventRequest(deployNotification)
-            {
-                ReferenceId = "broadcastTest",
-                ExpiryTime = DateTimeOffset.Now.AddMinutes(5),
-                TimeStamp = DateTimeOffset.Now
-            };
-            
-            var client = new ProactiveEventsClient(ProactiveEventsClient.EuropeEndpoint, token, true);
-            await client.Send(req);
-
-            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {request.Intent.Slots["AzureResource"].Value}", reprompt);
+            await azureResourceQueue.AddAsync(azureResource);
 
             return response;
         }
 
-        SkillResponse HandleAzureResourceNameIntent(IntentRequest request, ILogger log)
+        static async Task<SkillResponse> HandleAzureResourceNameIntent(IAsyncCollector<AzureResource> azureResourceQueue, IntentRequest request, ILogger log)
         {
             SkillResponse response = null;
+
+            var azureResource = new AzureResource
+            {
+                Name = "SuperFunc"
+            };
+
+            await azureResourceQueue.AddAsync(azureResource);
 
             return response;
         }

@@ -6,14 +6,15 @@
   <ItemGroup>
     <PackageReference Include="Alexa.NET" Version="1.5.7" />
     <PackageReference Include="Alexa.NET.ProactiveEvents" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.19.0" />
+    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.20.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="2.2.0" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.24" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.26" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodemotionRome19.Core\CodemotionRome19.Core.csproj" />
