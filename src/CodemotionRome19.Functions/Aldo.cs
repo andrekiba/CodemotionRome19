@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET;
 using Alexa.NET.Request;
@@ -118,33 +119,52 @@ namespace CodemotionRome19.Functions
 
         static SkillResponse HandleCreateAzureResourceIntent(IntentRequest request, Session session, ILogger log)
         {
-            var slots = request.Intent.Slots;
-            var arType = slots[Slots.AzureResource].Value;
-            SkillResponse response;
-
             if (session.Attributes == null)
                 session.Attributes = new Dictionary<string, object>();
 
-            var reprompt = new Reprompt
-            {
-                OutputSpeech = new PlainTextOutputSpeech
-                {
-                    Text = "Confermi?"
-                }
-            };
+            SkillResponse response;
+            Reprompt reprompt;
 
-            if (!slots.ContainsKey(Slots.AzureResourceName))
+            var slots = request.Intent.Slots;
+            var arType = slots[Slots.AzureResource].Value;
+            log.LogInformation(arType);
+            log.LogInformation(slots[Slots.AzureResource].Resolution.Authorities.First().Values.First().Value.Id);
+
+            if (!Enum.TryParse(arType, true, out AzureResourceType azureResourceType))
             {
-                session.Attributes[Slots.AzureResource] = arType;
-                response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType}", reprompt, session);
+                reprompt = new Reprompt
+                {
+                    OutputSpeech = new PlainTextOutputSpeech
+                    {
+                        Text = "Che tipo di risorsa desideri creare?"
+                    }
+                };
+
+                response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare, devi specificare un servizio Azure valido. Dimmelo di nuovo per favore", reprompt);
             }
             else
             {
-                var arName = slots[Slots.AzureResourceName].Value;
+                reprompt = new Reprompt
+                {
+                    OutputSpeech = new PlainTextOutputSpeech
+                    {
+                        Text = "Confermi?"
+                    }
+                };
 
-                session.Attributes[Slots.AzureResource] = arType;
-                session.Attributes[Slots.AzureResourceName] = arName;
-                response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType} {arName}", reprompt, session);
+                if (!slots.ContainsKey(Slots.AzureResourceName))
+                {
+                    session.Attributes[Slots.AzureResource] = azureResourceType;
+                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType}", reprompt, session);
+                }
+                else
+                {
+                    var arName = slots[Slots.AzureResourceName].Value;
+
+                    session.Attributes[Slots.AzureResource] = azureResourceType;
+                    session.Attributes[Slots.AzureResourceName] = arName;
+                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType} {arName}", reprompt, session);
+                }
             }
 
             return response;
@@ -172,21 +192,21 @@ namespace CodemotionRome19.Functions
 
         static async Task<SkillResponse> HandleCreateAzureResourceConfirmationIntent(IAsyncCollector<AzureResource> azureResourceQueue, Session session, ILogger log)
         {
-            var arType = (string)session.Attributes[Slots.AzureResource];
+            var azureResourceType = (AzureResourceType)session.Attributes[Slots.AzureResource];
             string arName = null;
             SkillResponse response;
 
             if (session.Attributes.ContainsKey(Slots.AzureResourceName))
             {
                 arName = (string)session.Attributes[Slots.AzureResourceName];
-                response = ResponseBuilder.Tell($"Creo la risorsa {arType} {arName}, ti avviserò appena terminato!");
+                response = ResponseBuilder.Tell($"Creo la risorsa {azureResourceType} {arName}, ti avviserò appena terminato!");
             }
             else
-                response = ResponseBuilder.Tell($"Creo la risorsa {arType}, ti avviserò appena terminato!");
+                response = ResponseBuilder.Tell($"Creo la risorsa {azureResourceType}, ti avviserò appena terminato!");
 
             var azureResource = new AzureResource
             {
-                Type = (AzureResourceType)Enum.Parse(typeof(AzureResourceType), arType),
+                Type = azureResourceType,
                 Name = arName
             };
 
