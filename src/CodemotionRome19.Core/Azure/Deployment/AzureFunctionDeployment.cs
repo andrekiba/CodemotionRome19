@@ -26,7 +26,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
             var create = Options.UseExistingResourceGroup
                 ? definition.WithExistingResourceGroup(Options.ResourceGroupName)
                 : definition.WithNewResourceGroup(Options.ResourceGroupName);
-
+            
             return create.CreateAsync();
         }
 

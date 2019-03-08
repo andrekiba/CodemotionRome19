@@ -1,10 +1,8 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
-using CodemotionRome19.Core.Models;
 using CodemotionRome19.Functions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,17 +16,18 @@ namespace CodemotionRome19.Functions
 {
     public class TestFunc
     {
-        readonly Configuration.AppSettings appSettings;
+        readonly AppSettings appSettings;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
 
-        public TestFunc(Configuration.AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
+        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
         {
             this.appSettings = appSettings;
             this.azureService = azureService;
             this.deploymentService = deploymentService;
         }
 
+        [Disable]
         [FunctionName("TestFunc")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
@@ -49,7 +48,7 @@ namespace CodemotionRome19.Functions
                     UseExistingResourceGroup = false,
                 };
 
-                deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
+                var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
             }
             catch (Exception e)
             {

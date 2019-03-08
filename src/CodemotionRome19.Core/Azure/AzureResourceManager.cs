@@ -25,133 +25,133 @@ namespace CodemotionRome19.Core.Azure
             {
                 new AzureResource
                 {
-                    Type = AzureResourceType.ActiveDirectory,
+                    Type = AzureResourceTypes.ActiveDirectory,
                     Name = AzureResourceNamingHelper.AzureActiveDirectory,
                     Description = AzureResourceNamingHelper.AzureActiveDirectory,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.AppService,
+                    Type = AzureResourceTypes.AppService,
                     Name = AzureResourceNamingHelper.AppService,
                     Description = AzureResourceNamingHelper.AppService,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.NotificationHubs,
+                    Type = AzureResourceTypes.NotificationHubs,
                     Name = AzureResourceNamingHelper.NotificationHubs,
                     Description = AzureResourceNamingHelper.NotificationHubs,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.MobileApps,
+                    Type = AzureResourceTypes.MobileApps,
                     Name = AzureResourceNamingHelper.MobileApps,
                     Description = AzureResourceNamingHelper.MobileApps,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.AzureSearch,
+                    Type = AzureResourceTypes.AzureSearch,
                     Name = AzureResourceNamingHelper.AzureSearch,
                     Description = AzureResourceNamingHelper.AzureSearch,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.Cdn,
+                    Type = AzureResourceTypes.Cdn,
                     Name = AzureResourceNamingHelper.AzureCdn,
                     Description = AzureResourceNamingHelper.AzureCdn,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.MachineLearning,
+                    Type = AzureResourceTypes.MachineLearning,
                     Name = AzureResourceNamingHelper.AzureMachineLearning,
                     Description = AzureResourceNamingHelper.AzureMachineLearning,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.Storage,
+                    Type = AzureResourceTypes.Storage,
                     Name = AzureResourceNamingHelper.AzureStorage,
                     Description = AzureResourceNamingHelper.AzureStorage,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.IotEdge,
+                    Type = AzureResourceTypes.IotEdge,
                     Name = AzureResourceNamingHelper.IotEdge,
                     Description = AzureResourceNamingHelper.IotEdge,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.CosmosDB,
+                    Type = AzureResourceTypes.CosmosDB,
                     Name = AzureResourceNamingHelper.CosmosDb,
                     Description = AzureResourceNamingHelper.CosmosDb,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.CognitiveServices,
+                    Type = AzureResourceTypes.CognitiveServices,
                     Name = AzureResourceNamingHelper.CognitiveServices,
                     Description = AzureResourceNamingHelper.CognitiveServices,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.SqlDatabase,
+                    Type = AzureResourceTypes.SqlDatabase,
                     Name = AzureResourceNamingHelper.SqlDatabase,
                     Description = AzureResourceNamingHelper.SqlDatabase,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.MySqlClearDatabase,
+                    Type = AzureResourceTypes.MySqlClearDatabase,
                     Name = AzureResourceNamingHelper.AzureMysqlCleardbDatabase,
                     Description = AzureResourceNamingHelper.AzureMysqlCleardbDatabase,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.RedisCache,
+                    Type = AzureResourceTypes.RedisCache,
                     Name = AzureResourceNamingHelper.RedisCache,
                     Description = AzureResourceNamingHelper.RedisCache,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.ApplicationInsights,
+                    Type = AzureResourceTypes.ApplicationInsights,
                     Name = AzureResourceNamingHelper.AppInsights,
                     Description = AzureResourceNamingHelper.AppInsights,
                     IsAvailable = false,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.Functions,
+                    Type = AzureResourceTypes.Functions,
                     Name = AzureResourceNamingHelper.AzureFunctions,
                     Description = AzureResourceNamingHelper.AzureFunctions,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.WebApp,
+                    Type = AzureResourceTypes.WebApp,
                     Name = AzureResourceNamingHelper.WebApps,
                     Description = AzureResourceNamingHelper.WebApps,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.KeyVault,
+                    Type = AzureResourceTypes.KeyVault,
                     Name = AzureResourceNamingHelper.KeyVault,
                     Description = AzureResourceNamingHelper.KeyVault,
                     IsAvailable = true,
                 },
                 new AzureResource
                 {
-                    Type = AzureResourceType.VirtualMachine,
+                    Type = AzureResourceTypes.VirtualMachine,
                     Name = AzureResourceNamingHelper.VirtualMachine,
                     Description = AzureResourceNamingHelper.VirtualMachine,
                     IsAvailable = true,

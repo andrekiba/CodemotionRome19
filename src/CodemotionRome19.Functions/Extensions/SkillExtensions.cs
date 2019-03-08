@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET.Request;
+using CodemotionRome19.Core.Azure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 
 namespace CodemotionRome19.Functions.Extensions
 {
@@ -68,5 +71,48 @@ namespace CodemotionRome19.Functions.Extensions
 
         static bool RequestTimestampWithinTolerance(DateTime timestamp)
             => Math.Abs(DateTimeOffset.Now.Subtract(timestamp).TotalSeconds) <= AllowedTimestampToleranceInSeconds;
+    }
+
+    internal static class SlotExtensions
+    {
+        public static bool TryParseAzureResourceType(this Slot slot, out AzureResourceType azureResourceType, ILogger log)
+        {
+            log.LogInformation(slot.Dump());
+
+            azureResourceType = null;
+            if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || !slot.Resolution.Authorities.Any())
+            {
+                log.LogError($"Slot {slot.Name} error");
+                return false;
+            }
+
+            var slotId = slot.Resolution.Authorities.First().Values.First().Value.Id;
+            azureResourceType = AzureResourceTypes.Find(Convert.ToInt32(slotId));
+            return azureResourceType != null;
+        }
+
+        public static string Dump(this Slot slot)
+        {
+            if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || !slot.Resolution.Authorities.Any())
+                return $"Slot {slot.Name} error";
+
+            var dump = string.Join(Environment.NewLine, slot.Name, slot.ConfirmationStatus, slot.Value,
+                slot.Resolution.Authorities.Select(a => a.Dump()));
+
+            return dump;
+        }
+
+        public static string Dump(this ResolutionAuthority ra)
+        {
+            var dump = string.Join(Environment.NewLine, ra.Name, ra.Status.Code, ra.Values.Select(v => v.Dump()));
+            return dump;
+        }
+
+        public static string Dump(this ResolutionValueContainer rvc)
+        {
+            var dump = $"{rvc.Value.Id} - {rvc.Value.Name}"; 
+
+            return dump;
+        }
     }
 }

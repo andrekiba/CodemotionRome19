@@ -2,7 +2,7 @@
 {
     public static class Slots
     {
-        public const string AzureResource = "AzureResource";
+        public const string AzureResourceType = "AzureResourceType";
         public const string AzureResourceName = "AzureResourceName";
     }
 }

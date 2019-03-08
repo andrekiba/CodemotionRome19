@@ -44,9 +44,7 @@ namespace CodemotionRome19.Functions
                 switch (request)
                 {
                     case LaunchRequest launchRequest:
-                        log.LogInformation("Session started");
-                        response = ResponseBuilder.Tell("Ciao! sono Aldo, come posso aiutarti?");
-                        response.Response.ShouldEndSession = false;
+                        response = HandleLaunchRequest(launchRequest, log);
                         break;
                     case IntentRequest intentRequest:
                         // Checks whether to handle system messages defined by Amazon.
@@ -101,20 +99,45 @@ namespace CodemotionRome19.Functions
             switch (request.Intent.Name)
             {
                 case Intents.CancelIntent:
-                    response = ResponseBuilder.Tell("Canceling...");
+                    var reprompt = new Reprompt
+                    {
+                        OutputSpeech = new PlainTextOutputSpeech
+                        {
+                            Text = "Desideri ancora creare un servizio Azure?"
+                        }
+                    };
+                    response = ResponseBuilder.Ask("OK, ricominciamo da capo.", reprompt);
                     break;
                 case Intents.HelpIntent:
-                    response = ResponseBuilder.Tell("Help...");
+                    response = ResponseBuilder.Tell("Ad esempio prova a dirmi 'Crea una function app che si chiama Super Func'.");
                     response.Response.ShouldEndSession = false;
                     break;
                 case Intents.StopIntent:
-                    response = ResponseBuilder.Tell("Stopping...");
+                    response = ResponseBuilder.Tell("OK, ci vediamo al prossimo deploy!");
                     break;
                 default:
                     break;
             }
 
             return (response != null, response);
+        }
+
+        static SkillResponse HandleLaunchRequest(LaunchRequest request, ILogger log)
+        {
+            log.LogInformation("Session started");
+
+            var reprompt = new Reprompt
+            {
+                OutputSpeech = new PlainTextOutputSpeech
+                {
+                    Text = "Ad esempio puoi dirmi 'Crea una function app che si chiama Super Function. Oppure deploya un db SQL.'"
+                }
+            };
+
+            var response = ResponseBuilder.Ask("Ciao! Sono Aldo. Posso aiutarti a creare servizi su Azure.", reprompt);
+            response.Response.ShouldEndSession = false;
+
+            return response;
         }
 
         static SkillResponse HandleCreateAzureResourceIntent(IntentRequest request, Session session, ILogger log)
@@ -126,11 +149,9 @@ namespace CodemotionRome19.Functions
             Reprompt reprompt;
 
             var slots = request.Intent.Slots;
-            var arType = slots[Slots.AzureResource].Value;
-            log.LogInformation(arType);
-            log.LogInformation(slots[Slots.AzureResource].Resolution.Authorities.First().Values.First().Value.Id);
+            var arType = slots[Slots.AzureResourceType];            
 
-            if (!Enum.TryParse(arType, true, out AzureResourceType azureResourceType))
+            if (!arType.TryParseAzureResourceType(out var azureResourceType, log))
             {
                 reprompt = new Reprompt
                 {
@@ -154,16 +175,16 @@ namespace CodemotionRome19.Functions
 
                 if (!slots.ContainsKey(Slots.AzureResourceName))
                 {
-                    session.Attributes[Slots.AzureResource] = azureResourceType;
-                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType}", reprompt, session);
+                    session.Attributes[Slots.AzureResourceType] = azureResourceType;
+                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {azureResourceType.Name}", reprompt, session);
                 }
                 else
                 {
                     var arName = slots[Slots.AzureResourceName].Value;
 
-                    session.Attributes[Slots.AzureResource] = azureResourceType;
+                    session.Attributes[Slots.AzureResourceType] = azureResourceType;
                     session.Attributes[Slots.AzureResourceName] = arName;
-                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {arType} {arName}", reprompt, session);
+                    response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {azureResourceType.Name} {arName}", reprompt, session);
                 }
             }
 
@@ -192,7 +213,7 @@ namespace CodemotionRome19.Functions
 
         static async Task<SkillResponse> HandleCreateAzureResourceConfirmationIntent(IAsyncCollector<AzureResource> azureResourceQueue, Session session, ILogger log)
         {
-            var azureResourceType = (AzureResourceType)session.Attributes[Slots.AzureResource];
+            var azureResourceType = (AzureResourceType)session.Attributes[Slots.AzureResourceType];
             string arName = null;
             SkillResponse response;
 
@@ -210,7 +231,8 @@ namespace CodemotionRome19.Functions
                 Name = arName
             };
 
-            await azureResourceQueue.AddAsync(azureResource);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            //await azureResourceQueue.AddAsync(azureResource);
 
             return response;
         }

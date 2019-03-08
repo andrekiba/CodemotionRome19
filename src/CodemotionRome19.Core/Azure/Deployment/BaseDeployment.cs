@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
 
@@ -20,16 +21,27 @@ namespace CodemotionRome19.Core.Azure.Deployment
 
         public DeploymentOptions Options { get; }
 
-        public async Task CreateAsync()
+        public async Task<Result> CreateAsync()
         {
-            watch.Restart();
+            try
+            {
+                watch.Restart();
 
-            await ExecuteCreateAsync();
+                await ExecuteCreateAsync();
 
-            var totalSeconds = watch.Elapsed.TotalSeconds;
-            Debug.WriteLine($"'{GetDeploymentName()}' created in {totalSeconds} seconds");
+                var totalSeconds = watch.Elapsed.TotalSeconds;
+                Debug.WriteLine($"'{GetDeploymentName()}' created in {totalSeconds} seconds");
 
-            watch.Stop();
+                watch.Stop();
+
+                return Result.Ok();
+            }
+            catch (Exception e)
+            {
+                watch.Stop();
+                var error = $"Error creating resource '{GetDeploymentName()}':{Environment.NewLine}{e.Message}";
+                return Result.Fail(error);
+            }
         }
 
         protected abstract string GetEventName();

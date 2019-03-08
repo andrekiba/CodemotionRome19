@@ -1,144 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
     public class DeploymentService : IDeploymentService
     {
-        public event EventHandler<DeploymentEventArgs> Started;
-
-        public event EventHandler<DeploymentEventArgs> Finished;
-
-        public event EventHandler<DeploymentErrorEventArgs> Failed;
-
-        public void Deploy(
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure, 
-            DeploymentOptions options, 
-            IEnumerable<AzureResource> resources)
+        public async Task<Result[]> Deploy( IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
         {
-            foreach (var resource in resources)
-            {
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        Started?.Invoke(this, new DeploymentEventArgs(resource));
+            var tasks = resources.Select(resource => CreateResourceAsync(azure, options, resource.Name, resource.Type)).ToList();
 
-                        await CreateResourceAsync(azure, options, resource.Type);
+            var processingTasks = tasks.Select(async t => await t).ToArray();
 
-                        Finished?.Invoke(this, new DeploymentEventArgs(resource));
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error creating resource of type {resource.Type}: {ex}");
-                        Failed?.Invoke(this, new DeploymentErrorEventArgs(resource, ex));
-                    }
-                });
-            }
+            var result = await Task.WhenAll(processingTasks);
+
+            return result;
         }
 
-        public async Task<Result> Deploy(
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
-            DeploymentOptions options,
-            AzureResource resource)
-        {           
-            try
-            {
-                await CreateResourceAsync(azure, options, resource.Type);
-                return Result.Ok();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error creating resource of type {resource.Type}: {ex}");
-                return Result.Fail(ex.Message);
-            }
-        }
+        public async Task<Result> Deploy(IAuthenticated azure, DeploymentOptions options, AzureResource resource) => 
+            await CreateResourceAsync(azure, options, resource.Name, resource.Type);
 
-        static Task CreateResourceAsync(
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
-            DeploymentOptions options,
-            AzureResourceType resourceType)
+        static Task<Result> CreateResourceAsync(IAuthenticated azure, DeploymentOptions options, string resourceName, AzureResourceType resourceType)
         {
-            var resourceName = GetRandomResourceName(resourceType);
+            var rName = string.IsNullOrWhiteSpace(resourceName) ? GetRandomResourceName(resourceType) : resourceName;
             BaseDeployment deployment = null;
+            var notSupported = $"Service {resourceType} not supported!";
 
-            switch (resourceType)
-            {
-                case AzureResourceType.AppService:
-                case AzureResourceType.WebApp:
-                    deployment = new WebAppDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.Storage:
-                    deployment = new StorageAccountDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.CosmosDB:
-                    deployment = new CosmosDbAccountDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.Functions:
-                    deployment = new AzureFunctionDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.SqlDatabase:
-                    deployment = new SqlAzureDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.KeyVault:
-                    deployment = new KeyVaultDeployment(resourceName, azure, options);
-                    break;
-                case AzureResourceType.VirtualMachine:
-                    deployment = new VirtualMachineDeployment(resourceName, azure, options);
-                    break;
-                default:
-                    Debug.WriteLine($"Service of type {resourceType} not supported!");
-                    break;
-            }
-
-            return deployment?.CreateAsync() ?? Task.CompletedTask;
+            if (resourceType.Id == AzureResourceTypes.AppService.Id || resourceType.Id == AzureResourceTypes.WebApp.Id)
+                deployment = new WebAppDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.Storage.Id)
+                deployment = new StorageAccountDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.CosmosDB.Id)
+                deployment = new CosmosDbAccountDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.Functions.Id)
+                deployment = new AzureFunctionDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.SqlDatabase.Id)
+                deployment = new SqlAzureDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.KeyVault.Id)
+                deployment = new KeyVaultDeployment(rName, azure, options);
+            else if (resourceType.Id == AzureResourceTypes.VirtualMachine.Id)
+                deployment = new VirtualMachineDeployment(rName, azure, options);
+            else
+                Debug.WriteLine(notSupported);
+            
+            return deployment?.CreateAsync() ?? Task.FromResult(Result.Fail(notSupported));
         }
 
         static string GetRandomResourceName(AzureResourceType resourceType)
         {
             const int maxNameLength = 20;
 
-            const string cosmosDBPrefix = "cosmos-";
-            const string functionsPrefix = "function-";
-            const string storagePrefix = "storage";
-            const string webAppPrefix = "web-";
-            const string sqlPrefix = "sql-";
-            const string kvPrefix = "vault-";
-            const string vmPrefix = "vm-";
-
-            var prefix = string.Empty;
-
-            switch (resourceType)
-            {
-                case AzureResourceType.AppService:
-                case AzureResourceType.WebApp:
-                    prefix = webAppPrefix;
-                    break;
-                case AzureResourceType.Storage:
-                    prefix = storagePrefix;
-                    break;
-                case AzureResourceType.CosmosDB:
-                    prefix = cosmosDBPrefix;
-                    break;
-                case AzureResourceType.Functions:
-                    prefix = functionsPrefix;
-                    break;
-                case AzureResourceType.SqlDatabase:
-                    prefix = sqlPrefix;
-                    break;
-                case AzureResourceType.KeyVault:
-                    prefix = kvPrefix;
-                    break;
-                case AzureResourceType.VirtualMachine:
-                    prefix = vmPrefix;
-                    break;
-            }
-
-            return SdkContext.RandomResourceName(prefix, maxNameLength);
+            return SdkContext.RandomResourceName(resourceType.Prefix, maxNameLength);
         }
     }
 }
