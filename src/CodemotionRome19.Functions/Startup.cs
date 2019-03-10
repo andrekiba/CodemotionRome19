@@ -1,6 +1,7 @@
 ﻿using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Configuration;
+using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Functions;
 using CodemotionRome19.Functions.Configuration;
 using Microsoft.Azure.WebJobs;
@@ -14,9 +15,11 @@ namespace CodemotionRome19.Functions
     {
         public void Configure(IWebJobsBuilder builder)
         {
-            builder.Services.AddSingleton<IAzureConfiguration, AppSettings>();
+            //builder.Services.AddSingleton<IAzureConfiguration, AppSettings>();
+            builder.Services.AddSingleton<AppSettings>();
             builder.Services.AddTransient<IAzureService, AzureService>();
             builder.Services.AddTransient<IDeploymentService, DeploymentService>();
+            builder.Services.AddTransient<INotificationService, NotificationService>();
         }
     }
 }

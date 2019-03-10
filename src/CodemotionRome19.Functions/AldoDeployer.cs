@@ -37,12 +37,13 @@ namespace CodemotionRome19.Functions
                 {
                     Region = Region.EuropeWest,
                     ResourceGroupName = "TestCodemotionRome19",
-                    UseExistingResourceGroup = true
+                    UseExistingResourceGroup = true,
+                    SubscriptionId = appSettings.SubscriptionId
                 };
 
                 var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
                 var deployResult = await deploymentService.Deploy(azure, deployOptions, azureResource);
-                var notificationResult = await notificationService.SendNotification(azureResource, deployResult);
+                //var notificationResult = await notificationService.SendNotification(azureResource, deployResult);
             }
             catch (Exception e)
             {

@@ -32,7 +32,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
 
         protected override string GetDeploymentName()
         {
-            return $"'{AccountName}' CosmosDB Account";
+            return $"'{AccountName}' Azure Storage";
         }
 
         protected override string GetEventName()

@@ -11,7 +11,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
 {
     public class DeploymentService : IDeploymentService
     {
-        public async Task<Result[]> Deploy( IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
+        public async Task<Result[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
         {
             var tasks = resources.Select(resource => CreateResourceAsync(azure, options, resource.Name, resource.Type)).ToList();
 
@@ -27,7 +27,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
 
         static Task<Result> CreateResourceAsync(IAuthenticated azure, DeploymentOptions options, string resourceName, AzureResourceType resourceType)
         {
-            var rName = string.IsNullOrWhiteSpace(resourceName) ? GetRandomResourceName(resourceType) : resourceName;
+            var rName = GetRandomResourceName(resourceType, resourceName);
             BaseDeployment deployment = null;
             var notSupported = $"Service {resourceType} not supported!";
 
@@ -51,11 +51,10 @@ namespace CodemotionRome19.Core.Azure.Deployment
             return deployment?.CreateAsync() ?? Task.FromResult(Result.Fail(notSupported));
         }
 
-        static string GetRandomResourceName(AzureResourceType resourceType)
+        static string GetRandomResourceName(AzureResourceType resourceType, string resourceName = null)
         {
             const int maxNameLength = 20;
-
-            return SdkContext.RandomResourceName(resourceType.Prefix, maxNameLength);
+            return SdkContext.RandomResourceName(resourceName is null ? resourceType.Prefix : $"{resourceName}", maxNameLength);
         }
     }
 }

@@ -29,7 +29,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
 
             var sqlServer = await withLogin
                 .WithAdministratorLogin("andre")
-                .WithAdministratorPassword("4ndr3")
+                .WithAdministratorPassword("4ndr3P4ssw0rd")
                 .CreateAsync();
 
             var database = await sqlServer.Databases.Define($"{ServerName}_db")
