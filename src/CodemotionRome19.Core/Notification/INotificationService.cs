@@ -2,11 +2,12 @@
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Base;
+using CodemotionRome19.Core.Models;
 
 namespace CodemotionRome19.Core.Notification
 {
     public interface INotificationService
     {
-        Task<HttpResponseMessage> SendNotification(AzureResource azureResource, Result deployResult);
+        Task<HttpResponseMessage> SendUserNotification(string userId, string message);
     }
 }

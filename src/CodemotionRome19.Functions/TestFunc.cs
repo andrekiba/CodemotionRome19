@@ -27,7 +27,6 @@ namespace CodemotionRome19.Functions
             this.deploymentService = deploymentService;
         }
 
-        [Disable]
         [FunctionName("TestFunc")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
@@ -35,25 +34,25 @@ namespace CodemotionRome19.Functions
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            try
-            {
-                var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
-                var resourceGroups = azure.WithSubscription(appSettings.SubscriptionId).ResourceGroups.List();
-                var subscriptions = azure.Subscriptions.List();
+            //try
+            //{
+            //    var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
+            //    var resourceGroups = azure.WithSubscription(appSettings.SubscriptionId).ResourceGroups.List();
+            //    var subscriptions = azure.Subscriptions.List();
 
-                var funcDeployOptions = new DeploymentOptions
-                {
-                    Region = Region.EuropeWest,
-                    ResourceGroupName = "TestCodemotionRome19",
-                    UseExistingResourceGroup = false,
-                };
+            //    var funcDeployOptions = new DeploymentOptions
+            //    {
+            //        Region = Region.EuropeWest,
+            //        ResourceGroupName = "TestCodemotionRome19",
+            //        UseExistingResourceGroup = false,
+            //    };
 
-                var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
-            }
-            catch (Exception e)
-            {
-                log.LogError(e, "Azzzz!!!!");
-            }
+            //    var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
+            //}
+            //catch (Exception e)
+            //{
+            //    log.LogError(e, "Azzzz!!!!");
+            //}
 
             string name = req.Query["name"];
 

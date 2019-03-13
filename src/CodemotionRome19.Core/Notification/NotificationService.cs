@@ -6,6 +6,7 @@ using Alexa.NET.ProactiveEvents;
 using Alexa.NET.ProactiveEvents.MessageReminders;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Base;
+using CodemotionRome19.Core.Models;
 
 namespace CodemotionRome19.Core.Notification
 {
@@ -20,7 +21,7 @@ namespace CodemotionRome19.Core.Notification
             this.clientSecret = clientSecret;
         }
 
-        public async Task<HttpResponseMessage> SendNotification(AzureResource azureResource, Result deployResult)
+        public async Task<HttpResponseMessage> SendUserNotification(string userId, string message)
         {
             var messaging = new AccessTokenClient(AccessTokenClient.ApiDomainBaseAddress);
             var token = (await messaging.Send(clientId, clientSecret)).Token;
@@ -29,7 +30,7 @@ namespace CodemotionRome19.Core.Notification
 
             var deployReminder = new MessageReminder(
                 new MessageReminderState(MessageReminderStatus.Unread, MessageReminderFreshness.New),
-                new MessageReminderGroup("Aldo", 1, MessageReminderUrgency.Urgent));
+                new MessageReminderGroup(message, 1, MessageReminderUrgency.Urgent));
 
             #endregion
 
@@ -42,17 +43,17 @@ namespace CodemotionRome19.Core.Notification
 
             #endregion 
 
-            var boradcastReq = new BroadcastEventRequest(deployReminder)
+            var broadcastReq = new BroadcastEventRequest(deployReminder)
             {
-                ReferenceId = "unique-id-of-this-instance",
-                ExpiryTime = DateTimeOffset.Now.AddMinutes(5),
+                ReferenceId = Guid.NewGuid().ToString(),
+                ExpiryTime = DateTimeOffset.Now.AddMinutes(6),
                 TimeStamp = DateTimeOffset.Now
             };
 
-            var userReq = new UserEventRequest("userId", deployEvent)
+            var userReq = new UserEventRequest(userId, deployReminder)
             {
-                ReferenceId = "unique-id-of-this-instance",
-                ExpiryTime = DateTimeOffset.Now.AddMinutes(5),
+                ReferenceId = Guid.NewGuid().ToString(),
+                ExpiryTime = DateTimeOffset.Now.AddMinutes(6),
                 TimeStamp = DateTimeOffset.Now
             };
 

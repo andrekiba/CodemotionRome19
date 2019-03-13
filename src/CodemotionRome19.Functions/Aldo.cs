@@ -9,6 +9,7 @@ using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Functions.Alexa;
 using CodemotionRome19.Functions.Configuration;
@@ -38,7 +39,7 @@ namespace CodemotionRome19.Functions
 
         [FunctionName("Aldo")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req,
-            [Queue("azure-resources", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResource> azureResourceQueue,
+            [Queue("azure-resource-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResourceToDeploy> deployQueue,
             ILogger log)
         {
             var json = await req.ReadAsStringAsync();
@@ -51,7 +52,7 @@ namespace CodemotionRome19.Functions
                 return new BadRequestResult();
             }
 
-            var session = skillRequest.Session;
+            var session = skillRequest.Session;            
             var request = skillRequest.Request;
             SkillResponse response = null;
 
@@ -81,7 +82,7 @@ namespace CodemotionRome19.Functions
                         response = HandlSetResourceNameIntent(intentRequest, session, log);
                         break;
                     case IntentRequest intentRequest when CanHandleCreateResourceIntent(intentRequest, session):
-                        response = await HandleCreateResourceIntent(intentRequest, session, azureResourceQueue, log);
+                        response = await HandleCreateResourceIntent(intentRequest, session, deployQueue, log);
                         break;
                     case IntentRequest intentRequest: //Unhandled
                         response = HandleUnhandled(intentRequest);
@@ -278,7 +279,7 @@ namespace CodemotionRome19.Functions
         }
 
         static async Task<SkillResponse> HandleCreateResourceIntent(IntentRequest request, Session session, 
-            IAsyncCollector<AzureResource> azureResourceQueue, ILogger log)
+            IAsyncCollector<AzureResourceToDeploy> deployQueue, ILogger log)
         {
             SkillResponse response;
 
@@ -297,14 +298,18 @@ namespace CodemotionRome19.Functions
                 else
                     response = ResponseBuilder.Tell($"OK, creo la risorsa '{azureResourceType.Name}', ti avviserò con una notifica appena terminato!");
 
-                var azureResource = new AzureResource
+                var azureResourceToDeploy = new AzureResourceToDeploy
                 {
-                    Type = azureResourceType,
-                    Name = arName
+                    AzureResource = new AzureResource
+                    {
+                        Type = azureResourceType,
+                        Name = arName
+                    },
+                    RequestedByUser = session.User.UserId
                 };
 
                 //await Task.Delay(TimeSpan.FromSeconds(1));
-                await azureResourceQueue.AddAsync(azureResource);
+                await deployQueue.AddAsync(azureResourceToDeploy);
 
                 //var deployOptions = new DeploymentOptions
                 //{
