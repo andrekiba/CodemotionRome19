@@ -15,6 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="2.2.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.26" />
+    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodemotionRome19.Core\CodemotionRome19.Core.csproj" />

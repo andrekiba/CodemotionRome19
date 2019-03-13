@@ -8,6 +8,9 @@ using CodemotionRome19.Functions.Configuration;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
@@ -46,10 +49,12 @@ namespace CodemotionRome19.Functions
 
                 var deployResult = await deploymentService.Deploy(azure, deployOptions, azureResourceToDeploy.AzureResource);
 
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(1));
 
-                var notificationMessage = deployResult.IsSuccess ? $"Il deploy della risorsa {azureResourceToDeploy.AzureResource.Type.Name} richiesta è andato a buon fine" : 
-                    $"Il deploy della risorsa {azureResourceToDeploy.AzureResource.Type.Name} richiesta è fallito";
+                const string failed = "è fallito";
+                const string success = "è andato a buon fine";
+
+                var notificationMessage = $"Aldo. Il deploy della risorsa {azureResourceToDeploy.AzureResource.Type.Name} richiesta {(deployResult.IsSuccess ? success : failed)}";
 
                 var notificationResult = await notificationService.SendUserNotification(azureResourceToDeploy.RequestedByUser, notificationMessage);
             }

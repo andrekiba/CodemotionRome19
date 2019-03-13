@@ -11,6 +11,8 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
@@ -33,6 +35,14 @@ namespace CodemotionRome19.Functions
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
+
+            var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
+            var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
+            var serilog = new LoggerConfiguration()
+                .WriteTo.AzureTableStorage(connectionString, storageTableName: tableName)
+                .CreateLogger();
+
+            serilog.Information("test func running");
 
             //try
             //{

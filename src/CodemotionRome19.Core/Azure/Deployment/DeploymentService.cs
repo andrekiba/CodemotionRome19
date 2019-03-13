@@ -54,7 +54,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
         static string GetRandomResourceName(AzureResourceType resourceType, string resourceName = null)
         {
             const int maxNameLength = 20;
-            return SdkContext.RandomResourceName(resourceName is null ? resourceType.Prefix : $"{resourceName}", maxNameLength);
-        }
+            return SdkContext.RandomResourceName(resourceName is null ? resourceType.Prefix : $"{resourceName.ToLowerCamelCase()}", maxNameLength);
+        }     
     }
 }

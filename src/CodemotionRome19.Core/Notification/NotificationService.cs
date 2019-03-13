@@ -46,15 +46,15 @@ namespace CodemotionRome19.Core.Notification
             var broadcastReq = new BroadcastEventRequest(deployReminder)
             {
                 ReferenceId = Guid.NewGuid().ToString(),
-                ExpiryTime = DateTimeOffset.Now.AddMinutes(6),
-                TimeStamp = DateTimeOffset.Now
+                ExpiryTime = DateTimeExtensions.ItaNow().AddMinutes(6),
+                TimeStamp = DateTimeExtensions.ItaNow()
             };
 
             var userReq = new UserEventRequest(userId, deployReminder)
             {
                 ReferenceId = Guid.NewGuid().ToString(),
-                ExpiryTime = DateTimeOffset.Now.AddMinutes(6),
-                TimeStamp = DateTimeOffset.Now
+                ExpiryTime = DateTimeExtensions.ItaNow().AddMinutes(6),
+                TimeStamp = DateTimeExtensions.ItaNow()
             };
 
             var client = new ProactiveEventsClient(ProactiveEventsClient.EuropeEndpoint, token, true);
