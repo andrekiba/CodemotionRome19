@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
+using CodemotionRome19.Core.Configuration;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
@@ -11,6 +11,12 @@ namespace CodemotionRome19.Core.Azure.Deployment
 {
     public class DeploymentService : IDeploymentService
     {
+        readonly IConfiguration configuration;
+        public DeploymentService(IConfiguration configuration)
+        {
+            this.configuration = configuration;
+        }
+
         public async Task<Result[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
         {
             var tasks = resources.Select(resource => CreateResourceAsync(azure, options, resource.Name, resource.Type)).ToList();

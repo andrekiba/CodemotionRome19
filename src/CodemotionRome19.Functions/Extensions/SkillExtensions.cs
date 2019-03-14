@@ -3,18 +3,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET.Request;
 using CodemotionRome19.Core.Azure;
+using CodemotionRome19.Core.Base;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 
 namespace CodemotionRome19.Functions.Extensions
 {
-    internal static class StringExtensions
-    {
-        public static bool IsNullOrWhiteSpace(this string s) => string.IsNullOrWhiteSpace(s);
-    }
-
     internal static class RequestValidationExtensions
     {
         const int AllowedTimestampToleranceInSeconds = 150;

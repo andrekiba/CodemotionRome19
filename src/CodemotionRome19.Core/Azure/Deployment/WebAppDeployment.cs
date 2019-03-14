@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Azure.Management.AppService.Fluent;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -7,7 +8,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public WebAppDeployment(
             string appName,
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options)
             : base(azure, options)
         {
@@ -32,14 +33,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 .CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{AppName}' Web App";
-        }
-
-        protected override string GetEventName()
-        {
-            return "Azure Web Apps";
-        }
+        protected override string GetDeploymentName() => $"'{AppName}' Web App";
     }
 }

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -9,7 +10,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         readonly Stopwatch watch;
 
-        protected BaseDeployment(Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure, DeploymentOptions options)
+        protected BaseDeployment(IAuthenticated azure, DeploymentOptions options)
         {
             Azure = azure;
             Options = options;
@@ -17,7 +18,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
             watch = new Stopwatch();
         }
 
-        public Microsoft.Azure.Management.Fluent.Azure.IAuthenticated Azure { get; }
+        public IAuthenticated Azure { get; }
 
         public DeploymentOptions Options { get; }
 
@@ -43,8 +44,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 return Result.Fail(error);
             }
         }
-
-        protected abstract string GetEventName();
 
         protected abstract string GetDeploymentName();
 

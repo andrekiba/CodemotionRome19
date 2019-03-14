@@ -5,6 +5,8 @@ namespace CodemotionRome19.Core.Base
 {
     public static class StringExtensions
     {
+        public static bool IsNullOrWhiteSpace(this string s) => string.IsNullOrWhiteSpace(s);
+
         public static string ToLowerCamelCase(this string text)
         {
             return string.Join("", text.Split(new[] { "-", "_", " " }, StringSplitOptions.RemoveEmptyEntries)

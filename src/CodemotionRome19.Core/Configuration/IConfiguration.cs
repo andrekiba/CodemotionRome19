@@ -1,6 +1,6 @@
 ﻿namespace CodemotionRome19.Core.Configuration
 {
-    public interface IAzureConfiguration
+    public interface IConfiguration
     {
         string ClientId { get; }
         string ClientSecret { get; }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 
-namespace CodemotionRome19.Core.Models
+namespace CodemotionRome19.Core.Azure
 {
     public class Ubication
     {

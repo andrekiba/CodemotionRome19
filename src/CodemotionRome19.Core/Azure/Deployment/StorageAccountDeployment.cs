@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -6,7 +7,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public StorageAccountDeployment(
             string accountName,
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options)
             : base(azure, options)
         {
@@ -30,14 +31,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 .CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{AccountName}' Azure Storage";
-        }
-
-        protected override string GetEventName()
-        {
-            return "Azure Storage";
-        }
+        protected override string GetDeploymentName() => $"'{AccountName}' Azure Storage";
     }
 }

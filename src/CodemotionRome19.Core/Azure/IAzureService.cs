@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure.Deployment;
-using CodemotionRome19.Core.Models;
 using Microsoft.Azure.Management.Fluent;
 using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 

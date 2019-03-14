@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Alexa.NET;
 using Alexa.NET.Request;
@@ -10,16 +8,12 @@ using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Configuration;
-using CodemotionRome19.Core.Models;
-using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Functions.Alexa;
-using CodemotionRome19.Functions.Configuration;
 using CodemotionRome19.Functions.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
@@ -29,13 +23,13 @@ namespace CodemotionRome19.Functions
 {
     public class Aldo
     {
-        readonly IAzureConfiguration azureConfiguration;
+        readonly IConfiguration configuration;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
 
-        public Aldo(IAzureConfiguration azureConfiguration, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
+        public Aldo(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService)
         {
-            this.azureConfiguration = azureConfiguration;
+            this.configuration = configuration;
             this.azureService = azureService;
             this.deploymentService = deploymentService;
         }

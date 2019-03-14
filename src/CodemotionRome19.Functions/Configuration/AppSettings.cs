@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
-using IAzureConfiguration = CodemotionRome19.Core.Configuration.IAzureConfiguration;
 
 namespace CodemotionRome19.Functions.Configuration
 {
-    public class AppSettings : IAzureConfiguration
+    public class AppSettings : Core.Configuration.IConfiguration
     {
         public string ClientId { get; }
         public string ClientSecret { get; }
@@ -17,8 +16,6 @@ namespace CodemotionRome19.Functions.Configuration
         public AppSettings()
         {
             config = new ConfigurationBuilder()
-                //.SetBasePath(context.FunctionAppDirectory)
-                //.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 

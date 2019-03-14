@@ -1,28 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure.Deployment;
-using CodemotionRome19.Core.Configuration;
-using CodemotionRome19.Core.Models;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure
 {
     public class AzureService : IAzureService
     {
-        readonly IAzureConfiguration azureConfiguration;
-
-        public AzureService(IAzureConfiguration azureConfiguration)
-        {
-            this.azureConfiguration = azureConfiguration;
-        }
-
         public IAzure Azure { get; private set; }
         public IAuthenticated Auth { get; private set; }
 
@@ -52,7 +41,10 @@ namespace CodemotionRome19.Core.Azure
 
             var result = groups.Select(g => new ResourceGroup
             {
+                Id = g.Id,
                 Name = g.Name,
+                Key = g.Key,
+                Type = g.Type
             });
 
             return Task.FromResult(result);
@@ -122,26 +114,6 @@ namespace CodemotionRome19.Core.Azure
                 Console.WriteLine(e);
                 throw;
             }
-        }
-
-        static async Task<T> ExecuteAsync<T>(Func<Task<T>> func)
-        {
-            T result;
-
-            try
-            {
-                result = await func().ConfigureAwait(false);
-            }
-            catch (AdalServiceException serviceException) when (serviceException.StatusCode == (int)HttpStatusCode.BadRequest)
-            {
-                throw new ServiceException(serviceException.Message, serviceException);
-            }
-            catch (AdalServiceException serviceException) when (serviceException.StatusCode == (int)HttpStatusCode.Unauthorized)
-            {
-                throw new AuthenticationException(serviceException.Message, serviceException);
-            }
-
-            return result;
         }
     }
 }

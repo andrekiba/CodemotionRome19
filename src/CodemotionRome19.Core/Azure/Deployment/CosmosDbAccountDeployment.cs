@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Azure.Management.CosmosDB.Fluent.Models;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -7,7 +8,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public CosmosDbAccountDeployment(
             string docDbName,
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options) 
             : base(azure, options)
         {
@@ -35,14 +36,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 .CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{DocDbName}' CosmosDB Account";
-        }
-
-        protected override string GetEventName()
-        {
-            return "Azure CosmosDB";
-        }
+        protected override string GetDeploymentName() => $"'{DocDbName}' CosmosDB Account";
     }
 }

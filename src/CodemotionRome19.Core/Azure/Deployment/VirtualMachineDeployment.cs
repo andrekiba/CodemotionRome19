@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.Management.Compute.Fluent.Models;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -8,7 +9,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public VirtualMachineDeployment(
             string virtualMachineName,
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options)
             : base(azure, options)
         {
@@ -41,14 +42,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
             return create.CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{VirtualMachineName}' Virtual Machine";
-        }
-
-        protected override string GetEventName()
-        {
-            return "Virtual Machine";
-        }
+        protected override string GetDeploymentName() => $"'{VirtualMachineName}' Virtual Machine";
     }
 }

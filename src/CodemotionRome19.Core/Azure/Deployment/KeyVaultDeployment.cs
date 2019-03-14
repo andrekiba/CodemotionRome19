@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -6,7 +7,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public KeyVaultDeployment(
             string vaultName, 
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options)
             : base(azure, options)
         {
@@ -31,14 +32,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 .CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{VaultName}' Key Vault";
-        }
-
-        protected override string GetEventName()
-        {
-            return "Key Vault";
-        }
+        protected override string GetDeploymentName() => $"'{VaultName}' Key Vault";
     }
 }

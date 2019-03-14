@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Azure.Management.Sql.Fluent.Models;
+using IAuthenticated = Microsoft.Azure.Management.Fluent.Azure.IAuthenticated;
 
 namespace CodemotionRome19.Core.Azure.Deployment
 {
@@ -7,7 +8,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
     {
         public SqlAzureDeployment(
             string serverName,
-            Microsoft.Azure.Management.Fluent.Azure.IAuthenticated azure,
+            IAuthenticated azure,
             DeploymentOptions options)
             : base(azure, options)
         {
@@ -37,14 +38,6 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 .CreateAsync();
         }
 
-        protected override string GetDeploymentName()
-        {
-            return $"'{ServerName}' SQL Azure";
-        }
-
-        protected override string GetEventName()
-        {
-            return "SQL Azure";
-        }
+        protected override string GetDeploymentName() => $"'{ServerName}' SQL Azure";
     }
 }
