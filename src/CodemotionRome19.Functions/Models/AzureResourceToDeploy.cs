@@ -1,4 +1,6 @@
-﻿namespace CodemotionRome19.Core.Azure
+﻿using CodemotionRome19.Core.Azure;
+
+namespace CodemotionRome19.Functions.Models
 {
     public class AzureResourceToDeploy
     {

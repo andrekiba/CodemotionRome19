@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
+using AzureResourceToDeploy = CodemotionRome19.Functions.Models.AzureResourceToDeploy;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
@@ -87,6 +88,9 @@ namespace CodemotionRome19.Functions
                     case IntentRequest intentRequest when CanHandleCreateResourceIntent(intentRequest, session):
                         response = await HandleCreateResourceIntent(intentRequest, session, deployQueue, log);
                         break;
+                    case IntentRequest intentRequest when CanHandleAskForAnotherDeployIntent(intentRequest, session):
+                        response = HandleAskForAnotherDeployIntent(intentRequest, session, log);
+                        break;
                     case IntentRequest intentRequest: //Unhandled
                         response = HandleUnhandled(intentRequest);
                         break;
@@ -99,7 +103,6 @@ namespace CodemotionRome19.Functions
             {
                 var error = $"{e.Message}\n\r{e.StackTrace}";
                 log.LogError(error);
-                //response = ResponseBuilder.Tell("Purtroppo non riesco a fare il deploy della risorsa richiesta.");
                 response = ResponseBuilder.Tell("Mi dispiace, c'è stato un errore inatteso. Per favore, riprova più tardi.");
             }
 
@@ -114,13 +117,10 @@ namespace CodemotionRome19.Functions
 
             var reprompt = new Reprompt
             {
-                OutputSpeech = new PlainTextOutputSpeech
-                {
-                    Text = "Ad esempio puoi dirmi 'Crea una function app. Oppure, deploya un databse SQL.'"
-                }
+                OutputSpeech = "<p>Ad esempio puoi dirmi, <s>Crea una Function App</s></p> <p>Oppure, <s>Deploya un database SQL</s></p>".ToSpeech()
             };
 
-            var response = ResponseBuilder.Ask("Ciao! Sono Aldo. Posso aiutarti a creare servizi su Azure.", reprompt);
+            var response = ResponseBuilder.Ask("Ciao! Sono <prosody rate=\"slow\">Aldo</prosody>. Posso aiutarti a creare servizi su Azure.".ToSpeech(), reprompt);
             response.Response.ShouldEndSession = false;
 
             return response;
@@ -140,7 +140,7 @@ namespace CodemotionRome19.Functions
 
         static SkillResponse HandleHelpIntent(IntentRequest request, Session session, ILogger log)
         {
-            var response = ResponseBuilder.Tell("Ad esempio prova a dirmi 'Crea un App Service. Oppure, deploya CosmosDB'.");
+            var response = ResponseBuilder.Tell("<p>Ad esempio prova a dirmi <s>Crea un App Service</s></p> <p>Oppure, <s>Deploya Cosmos DB</s></p>".ToSpeech());
             response.Response.ShouldEndSession = false;
             return response;
         }
@@ -154,7 +154,8 @@ namespace CodemotionRome19.Functions
                     Text = "Desideri ancora creare un servizio Azure?"
                 }
             };
-            var response = ResponseBuilder.Ask("OK, ricominciamo da capo.", reprompt);
+            session.Attributes.Clear();
+            var response = ResponseBuilder.Ask("OK, ricominciamo da capo.", reprompt, session);
             return response;
         }
 
@@ -193,16 +194,16 @@ namespace CodemotionRome19.Functions
                     }
                 };
 
-                response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare, devi specificare un servizio Azure valido. Dimmelo di nuovo per favor.", reprompt);
+                response = ResponseBuilder.Ask("<p>Non ho capito che tipo di risorsa vuoi creare.</p> <p>Devi specificare un servizio Azure valido.</p> <p>Dimmelo di nuovo per favore.</p>".ToSpeech(), reprompt);
             }
             else
             {
-                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Scusa, vuoi dargli un nome?" } };
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Scusa, vuoi dare un nome alla nuova risorsa?" } };
 
                 session.Attributes.Add(Slots.AzureResourceType, JsonConvert.SerializeObject(azureResourceType));
                 session.Attributes["state"] = States.AskForResourceName;
 
-                response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa '{azureResourceType.Name}'. Vuoi dargli un nome?", reprompt, session);           
+                response = ResponseBuilder.Ask($"<p>Ho capito che vuoi creare la risorsa </break>{azureResourceType.Name}</p> Vuoi dargli un nome?".ToSpeech(), reprompt, session);           
             }
 
             return response;
@@ -266,7 +267,7 @@ namespace CodemotionRome19.Functions
 
             var reprompt = new Reprompt{ OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
 
-            var response = ResponseBuilder.Ask($"Sto per creare la risorsa '{azureResourceType.Name}', con il nome '{arName}'. Confermi?", reprompt, session);
+            var response = ResponseBuilder.Ask($"<p>Sto per creare la risorsa '{azureResourceType.Name}', con il nome '{arName}'.</p> <p>Confermi?</p>".ToSpeech(), reprompt, session);
             
             return response;
         }
@@ -289,17 +290,16 @@ namespace CodemotionRome19.Functions
             if (request.Intent.Name == Intents.YesIntent)
             {
                 var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
-                string arName = null;
+                var arName = session.Attributes.ContainsKey(Slots.AzureResourceName) ? (string)session.Attributes[Slots.AzureResourceName] : null;
 
                 var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Vuoi creare un altro servizio?" } };
 
-                if (session.Attributes.ContainsKey(Slots.AzureResourceName))
-                {
-                    arName = (string)session.Attributes[Slots.AzureResourceName];
-                    response = ResponseBuilder.Tell($"OK, creo la risorsa '{azureResourceType.Name}' con nome '{arName}', ti avviserò con una notifica appena terminato!");
-                }
-                else
-                    response = ResponseBuilder.Tell($"OK, creo la risorsa '{azureResourceType.Name}', ti avviserò con una notifica appena terminato!");
+                session.Attributes.Remove(Slots.AzureResourceType);
+                session.Attributes.Remove(Slots.AzureResourceName);
+                session.Attributes["state"] = States.AskForAnotherDeploy;
+
+                response = ResponseBuilder.Ask(arName is null ? $"<p>OK, creo la risorsa <s>{azureResourceType.Name}</s></p> <p>Ti avviserò con una notifica appena terminato!</p>".ToSpeech() : 
+                    $"<p>OK, creo la risorsa <s>{azureResourceType.Name}</s> che si chiama <s>{arName}</s></p> <p>Ti avviserò con una notifica appena terminato!</p>".ToSpeech(), reprompt, session);
 
                 var azureResourceToDeploy = new AzureResourceToDeploy
                 {
@@ -311,21 +311,7 @@ namespace CodemotionRome19.Functions
                     RequestedByUser = session.User.UserId
                 };
 
-                //await Task.Delay(TimeSpan.FromSeconds(1));
                 await deployQueue.AddAsync(azureResourceToDeploy);
-
-                //var deployOptions = new DeploymentOptions
-                //{
-                //    Region = Region.EuropeWest,
-                //    ResourceGroupName = "TestCodemotionRome19",
-                //    UseExistingResourceGroup = true
-                //};
-
-                //var progressiveResponse = new ProgressiveResponse(skillRequest);
-                //await progressiveResponse.SendSpeech("Please wait while I gather your data.");
-
-                //var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
-                //var deployResult = await deploymentService.Deploy(azure, deployOptions, azureResource);
             }
             else
             {
@@ -337,10 +323,37 @@ namespace CodemotionRome19.Functions
                     }
                 };
 
-                response = ResponseBuilder.Ask($"Ah ok, forse allora ho capito male. Cosa desidere creare?", reprompt);
+                session.Attributes.Clear();
+                response = ResponseBuilder.Ask("Ah ok, forse allora ho capito male. <p>Cosa desidere creare?</p>".ToSpeech(), reprompt, session);                
             }
 
+            return response;
+        }
+
+        #endregion 
+
+        #region Ask for another deploy
+
+        static bool CanHandleAskForAnotherDeployIntent(IntentRequest request, Session session)
+        {
+            return (request.Intent.Name == Intents.YesIntent || request.Intent.Name == Intents.NoIntent) &&
+                   session.Attributes.ContainsValue(States.AskForAnotherDeploy);
+        }
+
+        static SkillResponse HandleAskForAnotherDeployIntent(IntentRequest request, Session session, ILogger log)
+        {
+            SkillResponse response;
+
             session.Attributes.Clear();
+
+            if (request.Intent.Name == Intents.YesIntent)
+            {
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Hai deciso che risorsa vuoi creare?" } };
+
+                response = ResponseBuilder.Ask("Perfetto! Che tipo di risorsa vuoi creare ora?", reprompt, session);
+            }
+            else
+                response = ResponseBuilder.Tell("OK, ci vediamo al prossimo deploy!");       
 
             return response;
         }
@@ -359,7 +372,7 @@ namespace CodemotionRome19.Functions
                 }
             };
 
-            var response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare, devi specificare un servizio Azure valido. Dimmelo di nuovo per favore", reprompt);
+            var response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare. Devi specificare un servizio Azure valido. <p>Per favore, dimmelo di nuovo.</p>".ToSpeech(), reprompt);
             return response;
         }
 

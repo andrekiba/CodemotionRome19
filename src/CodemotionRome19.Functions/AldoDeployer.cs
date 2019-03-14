@@ -9,6 +9,7 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using AzureResourceToDeploy = CodemotionRome19.Functions.Models.AzureResourceToDeploy;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
@@ -54,13 +55,12 @@ namespace CodemotionRome19.Functions
 
                 var deployResult = await deploymentService.Deploy(azure, deployOptions, ard.AzureResource);
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
-
                 const string failed = "è fallito";
                 const string success = "è andato a buon fine";
-                var resourceName = ard.AzureResource.Name.IsNullOrWhiteSpace() ? string.Empty : ard.AzureResource.Name;
 
-                var notificationMessage = $"Aldo. Il deploy della risorsa {ard.AzureResource.Type.Name} {resourceName} {(deployResult.IsSuccess ? success : failed)}";
+                var notificationMessage = ard.AzureResource.Name.IsNullOrWhiteSpace() ? 
+                    $"Aldo. <p>Il deploy della risorsa <s>{ard.AzureResource.Type.Name}</s> {(deployResult.IsSuccess ? success : failed)}</p>" : 
+                    $"Aldo. <p>Il deploy della risorsa <s>{ard.AzureResource.Type.Name}</s> <s>{ard.AzureResource.Name}</s> {(deployResult.IsSuccess ? success : failed)}</p>";
 
                 var notificationResult = await notificationService.SendUserNotification(ard.RequestedByUser, notificationMessage);
 

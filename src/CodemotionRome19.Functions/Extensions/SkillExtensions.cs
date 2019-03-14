@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET.Request;
+using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Base;
 using Microsoft.AspNetCore.Http;
@@ -68,6 +69,13 @@ namespace CodemotionRome19.Functions.Extensions
             => Math.Abs(DateTimeOffset.Now.Subtract(timestamp).TotalSeconds) <= AllowedTimestampToleranceInSeconds;
     }
 
+    public static class StringExtensions
+    {
+        public static SsmlOutputSpeech ToSpeech(this string text) => new SsmlOutputSpeech {Ssml = $"<speak>{text}</speak>" };
+
+        public static SsmlOutputSpeech P(this string text) => new SsmlOutputSpeech { Ssml = $"<p>{text}</p>" };
+    }
+
     internal static class SlotExtensions
     {
         public static bool TryParseAzureResourceType(this Slot slot, out AzureResourceType azureResourceType, ILogger log)
@@ -75,7 +83,8 @@ namespace CodemotionRome19.Functions.Extensions
             log.LogInformation(slot.Dump());
 
             azureResourceType = null;
-            if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || !slot.Resolution.Authorities.Any())
+            if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || 
+                !slot.Resolution.Authorities.Any() || slot.Resolution.Authorities.First().Values is null)
             {
                 log.LogError($"Slot {slot.Name} error");
                 return false;
@@ -90,7 +99,6 @@ namespace CodemotionRome19.Functions.Extensions
         {
             if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || !slot.Resolution.Authorities.Any())
                 return $"Slot {slot.Name} error";
-
             var dump = string.Join(Environment.NewLine, slot.Name, slot.ConfirmationStatus, slot.Value,
                 slot.Resolution.Authorities.Select(a => a.Dump()));
 

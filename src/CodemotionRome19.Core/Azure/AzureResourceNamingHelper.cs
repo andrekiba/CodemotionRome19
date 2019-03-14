@@ -24,11 +24,11 @@ namespace CodemotionRome19.Core.Azure
         public const string KeyVault = "Key Vault";
         public const string VirtualMachine = "Virtual Machine";
 
-        static readonly Regex ResourceGroupNameRegex = new Regex(@"^[-\w\._\(\)]+$", RegexOptions.Compiled);
+        static readonly Regex resourceGroupNameRegex = new Regex(@"^[-\w\._\(\)]+$", RegexOptions.Compiled);
 
         public static bool CheckResourceGroupName(string candidate)
         {
-            return ResourceGroupNameRegex.IsMatch(candidate ?? string.Empty);
+            return resourceGroupNameRegex.IsMatch(candidate ?? string.Empty);
         }
     }
 }
