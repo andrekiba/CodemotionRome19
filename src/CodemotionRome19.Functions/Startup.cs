@@ -15,8 +15,8 @@ namespace CodemotionRome19.Functions
     {
         public void Configure(IWebJobsBuilder builder)
         {
-            //builder.Services.AddSingleton<IAzureConfiguration, AppSettings>();
-            builder.Services.AddSingleton<AppSettings>();
+            builder.Services.AddSingleton<IAzureConfiguration, AppSettings>();
+            //builder.Services.AddSingleton<AppSettings>();
             builder.Services.AddTransient<IAzureService, AzureService>();
             builder.Services.AddTransient<IDeploymentService, DeploymentService>();
             builder.Services.AddTransient<INotificationService, NotificationService>();

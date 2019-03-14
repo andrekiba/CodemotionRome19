@@ -8,6 +8,6 @@ namespace CodemotionRome19.Core.Notification
 {
     public interface INotificationService
     {
-        Task<HttpResponseMessage> SendUserNotification(string userId, string message);
+        Task<Result> SendUserNotification(string userId, string message);
     }
 }

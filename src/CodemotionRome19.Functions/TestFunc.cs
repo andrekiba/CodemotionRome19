@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Functions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +19,13 @@ namespace CodemotionRome19.Functions
 {
     public class TestFunc
     {
-        readonly AppSettings appSettings;
+        readonly IAzureConfiguration azureConfiguration;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
 
-        public TestFunc(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService)
+        public TestFunc(IAzureConfiguration azureConfiguration, IAzureService azureService, IDeploymentService deploymentService)
         {
-            this.appSettings = appSettings;
+            this.azureConfiguration = azureConfiguration;
             this.azureService = azureService;
             this.deploymentService = deploymentService;
         }
@@ -37,12 +38,10 @@ namespace CodemotionRome19.Functions
             log.LogInformation("C# HTTP trigger function processed a request.");
 
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
+            //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
             var serilog = new LoggerConfiguration()
-                .WriteTo.AzureTableStorage(connectionString, storageTableName: tableName)
+                .WriteTo.AzureTableStorage(connectionString, storageTableName: "TestFuncLog")
                 .CreateLogger();
-
-            serilog.Information("test func running");
 
             //try
             //{

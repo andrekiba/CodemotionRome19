@@ -9,6 +9,7 @@ using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Functions.Alexa;
@@ -21,18 +22,20 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
     public class Aldo
     {
-        readonly AppSettings appSettings;
+        readonly IAzureConfiguration azureConfiguration;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
 
-        public Aldo(AppSettings appSettings, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
+        public Aldo(IAzureConfiguration azureConfiguration, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
         {
-            this.appSettings = appSettings;
+            this.azureConfiguration = azureConfiguration;
             this.azureService = azureService;
             this.deploymentService = deploymentService;
         }
@@ -42,6 +45,12 @@ namespace CodemotionRome19.Functions
             [Queue("azure-resource-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResourceToDeploy> deployQueue,
             ILogger log)
         {
+            var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
+            //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
+            var serilog = new LoggerConfiguration()
+                .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoLog")
+                .CreateLogger();
+
             var json = await req.ReadAsStringAsync();
             var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(json);
 
