@@ -203,7 +203,7 @@ namespace CodemotionRome19.Functions
                 session.Attributes.Add(Slots.AzureResourceType, JsonConvert.SerializeObject(azureResourceType));
                 session.Attributes["state"] = States.AskForResourceName;
 
-                response = ResponseBuilder.Ask($"<p>Ho capito che vuoi creare la risorsa </break>{azureResourceType.Name}</p> Vuoi dargli un nome?".ToSpeech(), reprompt, session);           
+                response = ResponseBuilder.Ask($"<p>Ho capito che vuoi creare la risorsa <break/>{azureResourceType.Name}</p> Vuoi dargli un nome?".ToSpeech(), reprompt, session);           
             }
 
             return response;
@@ -240,7 +240,7 @@ namespace CodemotionRome19.Functions
 
                 reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
 
-                response = ResponseBuilder.Ask($"Sto per creare la risorsa '{azureResourceType.Name}'. Confermi?", reprompt, session);
+                response = ResponseBuilder.Ask($"Sto per creare la risorsa <break/>{azureResourceType.Name}. Confermi?".ToSpeech(), reprompt, session);
             }
 
             return response;
@@ -267,7 +267,7 @@ namespace CodemotionRome19.Functions
 
             var reprompt = new Reprompt{ OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
 
-            var response = ResponseBuilder.Ask($"<p>Sto per creare la risorsa '{azureResourceType.Name}', con il nome '{arName}'.</p> <p>Confermi?</p>".ToSpeech(), reprompt, session);
+            var response = ResponseBuilder.Ask($"<p>Sto per creare la risorsa <break/>{azureResourceType.Name}, con il nome <break/>{arName}.</p> <p>Confermi?</p>".ToSpeech(), reprompt, session);
             
             return response;
         }
