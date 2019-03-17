@@ -5,17 +5,21 @@ using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
     public class AldoProjectDeployer
     {
+        #region Fields
+
+        const string BreakStrong = "<break strength=\"strong\"/>";
+
         readonly IConfiguration configuration;
         readonly INotificationService notificationService;
         readonly IAzureDevOpsService azureDevOpsService;
+
+        #endregion 
 
         public AldoProjectDeployer(IConfiguration configuration, INotificationService notificationService, IAzureDevOpsService azureDevOpsService)
         {
@@ -25,14 +29,10 @@ namespace CodemotionRome19.Functions
         }
 
         [FunctionName("AldoProjectDeployer")]
-        public async Task Run([QueueTrigger("project-deploy", Connection = "AzureWebJobsStorage")]ProjectToDeploy pd, 
-            ILogger log)
+        public async Task Run([QueueTrigger("project-deploy", Connection = "AzureWebJobsStorage")]ProjectToDeploy pd)
         {
-            log.LogInformation($"C# Queue trigger function processed: {pd.ProjectName}");
-
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
-            var serilog = new LoggerConfiguration()
+            var log = new LoggerConfiguration()
                 .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoProjectDeployerLog")
                 .CreateLogger();
 
@@ -40,20 +40,22 @@ namespace CodemotionRome19.Functions
             {
                 var releaseTrigger = await azureDevOpsService.TriggerRelease(pd);
 
-                var notificationMessage = releaseTrigger.IsSuccess ? 
-                    $"Aldo. Sto deployando il progetto <break strength=\"strong\"/> {pd.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps." 
-                    : $"Aldo. Errore durante il deploy del progetto <break strength=\"strong\"/> {pd.ProjectName}. Verifica sul portale Azure DevOps.";
+                if (!pd.FromNewResource)
+                {
+                    var notificationMessage = releaseTrigger.IsSuccess ?
+                        $"Aldo. Sto deployando il progetto {BreakStrong} {pd.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps."
+                        : $"Aldo. C'è stato une errore durante il deploy del progetto {BreakStrong} {pd.ProjectName}.";
 
-                var notificationResult = await notificationService.SendUserNotification(pd.RequestedByUser, notificationMessage);
+                    var notificationResult = await notificationService.SendUserNotification(pd.RequestedByUser, notificationMessage);
 
-                if (notificationResult.IsFailure)
-                    serilog.Error(notificationResult.Error);                    
+                    if (notificationResult.IsFailure)
+                        log.Error(notificationResult.Error);
+                }                    
             }
             catch (Exception e)
             {
                 var error = $"{e.Message}\n\r{e.StackTrace}";
-                log.LogError(error);
-                serilog.Error(error);
+                log.Error(error);
             }
         }
     }

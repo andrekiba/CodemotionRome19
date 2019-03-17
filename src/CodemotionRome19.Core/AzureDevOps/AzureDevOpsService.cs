@@ -38,7 +38,7 @@ namespace CodemotionRome19.Core.AzureDevOps
                 {
                     #region Project
 
-                    var project = (await pClient.GetProjects()).Single(p => p.Name == pd.ProjectName);
+                    var project = (await pClient.GetProjects()).Single(p => p.Id.ToString() == pd.Id);
                     //GetProject("b59a6f1c-ab6f-4e8b-bdf5-8628bb1bf030");
 
                     #endregion
@@ -116,7 +116,7 @@ namespace CodemotionRome19.Core.AzureDevOps
                     }
                     };
 
-                    var release = await rClient.CreateReleaseAsync(metadata, pd.ProjectName);
+                    var release = await rClient.CreateReleaseAsync(metadata, pd.Id);
 
                     // Variables substitution
                     if (pd.Variables.Any())
@@ -126,15 +126,15 @@ namespace CodemotionRome19.Core.AzureDevOps
                                 release.Variables[v.Key].Value = v.Value;
                         }
 
-                    release = await rClient.UpdateReleaseAsync(release, pd.ProjectName, release.Id);
+                    release = await rClient.UpdateReleaseAsync(release, pd.Id, release.Id);
 
                     // Activate release
                     var updateMetadata = new ReleaseUpdateMetadata { Status = ReleaseStatus.Active, Comment = "Triggered by Aldo" };
-                    release = await rClient.UpdateReleaseResourceAsync(updateMetadata, pd.ProjectName, release.Id);
+                    release = await rClient.UpdateReleaseResourceAsync(updateMetadata, pd.Id, release.Id);
 
                     // Trigger the deployment on a specific environment
                     release.Environments[0].Status = EnvironmentStatus.InProgress;
-                    release = await rClient.UpdateReleaseAsync(release, pd.ProjectName, release.Id);
+                    release = await rClient.UpdateReleaseAsync(release, pd.Id, release.Id);
 
                     #endregion
                 }

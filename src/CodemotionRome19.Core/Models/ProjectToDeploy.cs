@@ -10,5 +10,6 @@ namespace CodemotionRome19.Core.Models
         public string Branch { get; set; }
         public string RequestedByUser { get; set; }
         public Dictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
+        public bool FromNewResource { get; set; }
     }
 }

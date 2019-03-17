@@ -13,8 +13,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="2.2.0" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="15.131.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="15.131.1" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.148.0-preview" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="16.148.0-preview" />
   </ItemGroup>
 
   <ItemGroup>

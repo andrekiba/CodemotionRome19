@@ -1,65 +1,26 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CodemotionRome19.Core.Azure;
-using CodemotionRome19.Core.Azure.Deployment;
-using CodemotionRome19.Core.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
     public class TestFunc
     {
-        readonly IConfiguration configuration;
-        readonly IAzureService azureService;
-        readonly IDeploymentService deploymentService;
-
-        public TestFunc(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService)
-        {
-            this.configuration = configuration;
-            this.azureService = azureService;
-            this.deploymentService = deploymentService;
-        }
-
         [FunctionName("TestFunc")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
-            var serilog = new LoggerConfiguration()
+
+            var log = new LoggerConfiguration()
                 .WriteTo.AzureTableStorage(connectionString, storageTableName: "TestFuncLog")
                 .CreateLogger();
-
-            //try
-            //{
-            //    var azure = await azureService.Authenticate(appSettings.ClientId, appSettings.ClientSecret, appSettings.TenantId);
-            //    var resourceGroups = azure.WithSubscription(appSettings.SubscriptionId).ResourceGroups.List();
-            //    var subscriptions = azure.Subscriptions.List();
-
-            //    var funcDeployOptions = new DeploymentOptions
-            //    {
-            //        Region = Region.EuropeWest,
-            //        ResourceGroupName = "TestCodemotionRome19",
-            //        UseExistingResourceGroup = false,
-            //    };
-
-            //    var result = await deploymentService.Deploy(azure, funcDeployOptions, new AzureResource {Name = "CodemotionRomeFuncTest1"});
-            //}
-            //catch (Exception e)
-            //{
-            //    log.LogError(e, "Azzzz!!!!");
-            //}
 
             string name = req.Query["name"];
 

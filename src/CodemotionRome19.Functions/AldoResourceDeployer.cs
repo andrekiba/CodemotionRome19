@@ -2,24 +2,27 @@ using System;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
-using CodemotionRome19.Core.Base;
 using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
     public class AldoResourceDeployer
     {
+        #region Fields
+
+        const string BreakStrong = "<break strength=\"strong\"/>";
+
         readonly IConfiguration configuration;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
         readonly INotificationService notificationService;
+
+        #endregion 
 
         public AldoResourceDeployer(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
         {
@@ -31,14 +34,10 @@ namespace CodemotionRome19.Functions
 
         [FunctionName("AldoResourceDeployer")]
         public async Task Run([QueueTrigger("azure-resource-deploy", Connection = "AzureWebJobsStorage")]AzureResourceToDeploy ard,
-            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue,
-            ILogger log)
+            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue)
         {
-            log.LogInformation($"C# Queue trigger function processed: {ard.AzureResource.Type.Name}");
-
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
-            var serilog = new LoggerConfiguration()
+            var log = new LoggerConfiguration()
                 .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoResourceDeployerLog")
                 .CreateLogger();
 
@@ -60,28 +59,35 @@ namespace CodemotionRome19.Functions
 
                 if (deployResult.IsSuccess)
                 {
-                    notificationMessage = $"Aldo. Il deploy della risorsa <break strength=\"strong\"/> {ard.AzureResource.Type.Name} è andato a buon fine.";
+                    
                     if (ard.Project != null)
                     {
+                        notificationMessage = $"Aldo. Ho creato la risorsa {BreakStrong} {ard.AzureResource.Name}. " +
+                                              $"Ora sto deployando il progetto {BreakStrong} {ard.Project.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps.";
+
                         ard.Project.Variables.Add("ResourceName", deployResult.Value);
+
                         await projectDeployQueue.AddAsync(ard.Project);
+                    }
+                    else
+                    {
+                        notificationMessage = $"Aldo. Il deploy della risorsa {BreakStrong} {ard.AzureResource.Name} è andato a buon fine.";
                     }
                 }
                 else
                 {
-                    notificationMessage = $"Aldo. Il deploy della risorsa <break strength=\"strong\"/> {ard.AzureResource.Type.Name} è fallito.";
+                    notificationMessage = $"Aldo. Il deploy della risorsa {BreakStrong} {ard.AzureResource.Name} è fallito.";
                 }
 
                 var notificationResult = await notificationService.SendUserNotification(ard.RequestedByUser, notificationMessage);
 
                 if(notificationResult.IsFailure)
-                    serilog.Error(notificationResult.Error);
+                    log.Error(notificationResult.Error);
             }
             catch (Exception e)
             {
                 var error = $"{e.Message}\n\r{e.StackTrace}";
-                log.LogError(error);
-                serilog.Error(error);
+                log.Error(error);
             }
         }        
     }

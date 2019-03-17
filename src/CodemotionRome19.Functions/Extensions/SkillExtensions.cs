@@ -15,14 +15,14 @@ namespace CodemotionRome19.Functions.Extensions
     {
         const int AllowedTimestampToleranceInSeconds = 150;
 
-        public static async Task<bool> ValidateRequest(this SkillRequest skillRequest, HttpRequest request, ILogger log)
+        public static async Task<bool> ValidateRequest(this SkillRequest skillRequest, HttpRequest request, Serilog.ILogger log)
         {
             // Verifies that the request is indeed coming from Alexa.
 
             request.Headers.TryGetValue("SignatureCertChainUrl", out var signatureChainUrl);
             if (string.IsNullOrWhiteSpace(signatureChainUrl))
             {
-                log.LogError("Validation failed. Empty SignatureCertChainUrl header");
+                log.Error("Validation failed. Empty SignatureCertChainUrl header");
                 return false;
             }
 
@@ -33,14 +33,14 @@ namespace CodemotionRome19.Functions.Extensions
             }
             catch
             {
-                log.LogError($"Validation failed. SignatureChainUrl not valid: {signatureChainUrl}");
+                log.Error($"Validation failed. SignatureChainUrl not valid: {signatureChainUrl}");
                 return false;
             }
 
             request.Headers.TryGetValue("Signature", out var signature);
             if (string.IsNullOrWhiteSpace(signature))
             {
-                log.LogError("Validation failed - Empty Signature header");
+                log.Error("Validation failed - Empty Signature header");
                 return false;
             }
 
@@ -50,7 +50,7 @@ namespace CodemotionRome19.Functions.Extensions
 
             if (string.IsNullOrWhiteSpace(body))
             {
-                log.LogError("Validation failed - the JSON is empty");
+                log.Error("Validation failed - the JSON is empty");
                 return false;
             }
 
@@ -60,7 +60,7 @@ namespace CodemotionRome19.Functions.Extensions
             if (isValid && isTimestampValid)
                 return true;
 
-            log.LogError("Validation failed - RequestVerification failed");
+            log.Error("Validation failed - RequestVerification failed");
             return false;
 
         }
@@ -71,22 +71,19 @@ namespace CodemotionRome19.Functions.Extensions
 
     public static class StringExtensions
     {
-        public static SsmlOutputSpeech ToSpeech(this string text) => new SsmlOutputSpeech {Ssml = $"<speak>{text}</speak>" };
+        public static SsmlOutputSpeech ToSsmlSpeech(this string text) => new SsmlOutputSpeech {Ssml = $"<speak>{text}</speak>" };
 
         public static SsmlOutputSpeech P(this string text) => new SsmlOutputSpeech { Ssml = $"<p>{text}</p>" };
     }
 
     internal static class SlotExtensions
     {
-        public static bool TryParseAzureResourceType(this Slot slot, out AzureResourceType azureResourceType, ILogger log)
+        public static bool TryParseAzureResourceType(this Slot slot, out AzureResourceType azureResourceType)
         {
-            log.LogInformation(slot.Dump());
-
             azureResourceType = null;
             if (slot.Value.IsNullOrWhiteSpace() || slot.Resolution is null || 
                 !slot.Resolution.Authorities.Any() || slot.Resolution.Authorities.First().Values is null)
             {
-                log.LogError($"Slot {slot.Name} error");
                 return false;
             }
 
