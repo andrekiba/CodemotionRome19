@@ -8,6 +8,8 @@
         string SubscriptionId { get; }
         string AldoClientId { get; }
         string AldoClientSecret { get; }
+        string DevOpsToken { get; }
+        string DevOpsOrganization { get; }
 
         string GetValue(string key);
     }

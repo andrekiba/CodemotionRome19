@@ -10,6 +10,8 @@ namespace CodemotionRome19.Functions.Configuration
         public string SubscriptionId { get; }
         public string AldoClientId { get; }
         public string AldoClientSecret { get; }
+        public string DevOpsToken { get; }
+        public string DevOpsOrganization { get; }
 
         readonly IConfigurationRoot config;
 
@@ -25,6 +27,8 @@ namespace CodemotionRome19.Functions.Configuration
             SubscriptionId = config.GetValue<string>("SubscriptionId");
             AldoClientId = config.GetValue<string>("AldoClientId");
             AldoClientSecret = config.GetValue<string>("AldoClientSecret");
+            DevOpsToken = config.GetValue<string>("DevOpsToken");
+            DevOpsOrganization = config.GetValue<string>("DevOpsOrganization");
         }
 
         public string GetValue(string key) => config.GetValue<string>(key);

@@ -7,6 +7,8 @@
         public const string SetResourceNameIntent = "SetResourceNameIntent";
         public const string CreateResourceIntent = "CreateResourceIntent";
 
+        public const string DeployProjectIntent = "DeployProjectIntent";
+
         public const string CancelIntent = "AMAZON.CancelIntent";
         public const string HelpIntent = "AMAZON.HelpIntent";
         public const string StopIntent = "AMAZON.StopIntent";

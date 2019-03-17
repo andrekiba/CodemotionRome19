@@ -4,24 +4,24 @@ using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Base;
 using CodemotionRome19.Core.Configuration;
+using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using AzureResourceToDeploy = CodemotionRome19.Functions.Models.AzureResourceToDeploy;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
-    public class AldoDeployer
+    public class AldoResourceDeployer
     {
         readonly IConfiguration configuration;
         readonly IAzureService azureService;
         readonly IDeploymentService deploymentService;
         readonly INotificationService notificationService;
 
-        public AldoDeployer(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
+        public AldoResourceDeployer(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService, INotificationService notificationService)
         {
             this.configuration = configuration;
             this.azureService = azureService;
@@ -29,8 +29,9 @@ namespace CodemotionRome19.Functions
             this.notificationService = notificationService;
         }
 
-        [FunctionName("AldoDeployer")]
-        public async Task Run([QueueTrigger("azure-resource-deploy", Connection = "AzureWebJobsStorage")]AzureResourceToDeploy ard, 
+        [FunctionName("AldoResourceDeployer")]
+        public async Task Run([QueueTrigger("azure-resource-deploy", Connection = "AzureWebJobsStorage")]AzureResourceToDeploy ard,
+            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue,
             ILogger log)
         {
             log.LogInformation($"C# Queue trigger function processed: {ard.AzureResource.Type.Name}");
@@ -38,7 +39,7 @@ namespace CodemotionRome19.Functions
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
             //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
             var serilog = new LoggerConfiguration()
-                .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoDeployerLog")
+                .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoResourceDeployerLog")
                 .CreateLogger();
 
             try
@@ -55,12 +56,21 @@ namespace CodemotionRome19.Functions
 
                 var deployResult = await deploymentService.Deploy(azure, deployOptions, ard.AzureResource);
 
-                const string failed = "è fallito";
-                const string success = "è andato a buon fine";
+                string notificationMessage;
 
-                var notificationMessage = ard.AzureResource.Name.IsNullOrWhiteSpace() ? 
-                    $"Aldo. <p>Il deploy della risorsa <s>{ard.AzureResource.Type.Name}</s> {(deployResult.IsSuccess ? success : failed)}</p>" : 
-                    $"Aldo. <p>Il deploy della risorsa <s>{ard.AzureResource.Type.Name}</s> <s>{ard.AzureResource.Name}</s> {(deployResult.IsSuccess ? success : failed)}</p>";
+                if (deployResult.IsSuccess)
+                {
+                    notificationMessage = $"Aldo. Il deploy della risorsa <break strength=\"strong\"/> {ard.AzureResource.Type.Name} è andato a buon fine.";
+                    if (ard.Project != null)
+                    {
+                        ard.Project.Variables.Add("ResourceName", deployResult.Value);
+                        await projectDeployQueue.AddAsync(ard.Project);
+                    }
+                }
+                else
+                {
+                    notificationMessage = $"Aldo. Il deploy della risorsa <break strength=\"strong\"/> {ard.AzureResource.Type.Name} è fallito.";
+                }
 
                 var notificationResult = await notificationService.SendUserNotification(ard.RequestedByUser, notificationMessage);
 

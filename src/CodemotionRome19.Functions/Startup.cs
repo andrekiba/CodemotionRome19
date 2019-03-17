@@ -1,5 +1,6 @@
 ﻿using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Azure.Deployment;
+using CodemotionRome19.Core.AzureDevOps;
 using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Functions;
@@ -20,6 +21,7 @@ namespace CodemotionRome19.Functions
             builder.Services.AddTransient<IAzureService, AzureService>();
             builder.Services.AddTransient<IDeploymentService, DeploymentService>();
             builder.Services.AddTransient<INotificationService, NotificationService>();
+            builder.Services.AddTransient<IAzureDevOpsService, AzureDevOpsService>();
         }
     }
 }

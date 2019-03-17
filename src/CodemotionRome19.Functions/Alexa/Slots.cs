@@ -4,5 +4,7 @@
     {
         public const string AzureResourceType = "AzureResourceType";
         public const string AzureResourceName = "AzureResourceName";
+
+        public const string ProjectName = "ProjectName";
     }
 }

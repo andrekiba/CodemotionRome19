@@ -7,8 +7,8 @@ namespace CodemotionRome19.Core.Azure.Deployment
 {
     public interface IDeploymentService
     {
-        Task<Result[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources);
+        Task<Result<string>[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources);
 
-        Task<Result> Deploy(IAuthenticated azure, DeploymentOptions options, AzureResource resource);
+        Task<Result<string>> Deploy(IAuthenticated azure, DeploymentOptions options, AzureResource resource);
     }
 }

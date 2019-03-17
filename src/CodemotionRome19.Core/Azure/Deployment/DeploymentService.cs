@@ -17,7 +17,7 @@ namespace CodemotionRome19.Core.Azure.Deployment
             this.configuration = configuration;
         }
 
-        public async Task<Result[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
+        public async Task<Result<string>[]> Deploy(IAuthenticated azure, DeploymentOptions options, IEnumerable<AzureResource> resources)
         {
             var tasks = resources.Select(resource => CreateResourceAsync(azure, options, resource.Name, resource.Type)).ToList();
 
@@ -28,10 +28,10 @@ namespace CodemotionRome19.Core.Azure.Deployment
             return result;
         }
 
-        public async Task<Result> Deploy(IAuthenticated azure, DeploymentOptions options, AzureResource resource) => 
-            await CreateResourceAsync(azure, options, resource.Name, resource.Type);
+        public async Task<Result<string>> Deploy(IAuthenticated azure, DeploymentOptions options, AzureResource resource) => 
+             await CreateResourceAsync(azure, options, resource.Name, resource.Type);
 
-        static Task<Result> CreateResourceAsync(IAuthenticated azure, DeploymentOptions options, string resourceName, AzureResourceType resourceType)
+        static async Task<Result<string>> CreateResourceAsync(IAuthenticated azure, DeploymentOptions options, string resourceName, AzureResourceType resourceType)
         {
             var rName = GetRandomResourceName(resourceType, resourceName);
             BaseDeployment deployment = null;
@@ -53,8 +53,12 @@ namespace CodemotionRome19.Core.Azure.Deployment
                 deployment = new VirtualMachineDeployment(rName, azure, options);
             else
                 Debug.WriteLine(notSupported);
-            
-            return deployment?.CreateAsync() ?? Task.FromResult(Result.Fail(notSupported));
+
+            if (deployment == null)
+                return Result.Fail<string>(notSupported);
+
+            var deployResult = await deployment.CreateAsync();
+            return deployResult.IsSuccess ? Result.Ok(rName) : Result.Fail<string>(deployResult.Error);
         }
 
         static string GetRandomResourceName(AzureResourceType resourceType, string resourceName = null)

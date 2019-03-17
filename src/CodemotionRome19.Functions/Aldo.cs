@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET;
 using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
-using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Configuration;
+using CodemotionRome19.Core.Models;
 using CodemotionRome19.Functions.Alexa;
 using CodemotionRome19.Functions.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -17,27 +18,25 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
-using AzureResourceToDeploy = CodemotionRome19.Functions.Models.AzureResourceToDeploy;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodemotionRome19.Functions
 {
     public class Aldo
     {
-        readonly IConfiguration configuration;
-        readonly IAzureService azureService;
-        readonly IDeploymentService deploymentService;
+        const string BreakStrong = "<break strength=\"strong\"/>";
 
-        public Aldo(IConfiguration configuration, IAzureService azureService, IDeploymentService deploymentService)
+        readonly IConfiguration configuration;
+        
+        public Aldo(IConfiguration configuration)
         {
             this.configuration = configuration;
-            this.azureService = azureService;
-            this.deploymentService = deploymentService;
         }
 
         [FunctionName("Aldo")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req,
-            [Queue("azure-resource-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResourceToDeploy> deployQueue,
+            [Queue("azure-resource-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue,
+            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue,
             ILogger log)
         {
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
@@ -49,7 +48,7 @@ namespace CodemotionRome19.Functions
             var json = await req.ReadAsStringAsync();
             var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(json);
 
-            // Verifies that the request is indeed coming from Alexa.
+            // Verifies that the request is coming from Alexa.
             var isValid = await skillRequest.ValidateRequest(req, log);
             if (!isValid)
             {
@@ -86,10 +85,16 @@ namespace CodemotionRome19.Functions
                         response = HandlSetResourceNameIntent(intentRequest, session, log);
                         break;
                     case IntentRequest intentRequest when CanHandleCreateResourceIntent(intentRequest, session):
-                        response = await HandleCreateResourceIntent(intentRequest, session, deployQueue, log);
+                        response = await HandleCreateResourceIntent(intentRequest, session, resourceDeployQueue);
                         break;
-                    case IntentRequest intentRequest when CanHandleAskForAnotherDeployIntent(intentRequest, session):
-                        response = HandleAskForAnotherDeployIntent(intentRequest, session, log);
+                    case IntentRequest intentRequest when CanHandleAskForDeployProjectIntent(intentRequest, session):
+                        response = await HandleAskForDeployProjectIntent(intentRequest, session, resourceDeployQueue, log);
+                        break;
+                    case IntentRequest intentRequest when CanHandleAskForAnotherResourceIntent(intentRequest, session):
+                        response = HandleAskForAnotherResourceIntent(intentRequest, session, log);
+                        break;
+                    case IntentRequest intentRequest when CanHandleDeployProjectIntent(intentRequest, session):
+                        response = await HandleDeployProjectIntent(intentRequest, session, projectDeployQueue, resourceDeployQueue);
                         break;
                     case IntentRequest intentRequest: //Unhandled
                         response = HandleUnhandled(intentRequest);
@@ -117,10 +122,10 @@ namespace CodemotionRome19.Functions
 
             var reprompt = new Reprompt
             {
-                OutputSpeech = "<p>Ad esempio puoi dirmi, <s>Crea una Function App</s></p> <p>Oppure, <s>Deploya un database SQL</s></p>".ToSpeech()
+                OutputSpeech = $"Ad esempio puoi dirmi, {BreakStrong} 'Crea una Function App'. Oppure, {BreakStrong} 'Deploya un database SQL' .".ToSpeech()
             };
 
-            var response = ResponseBuilder.Ask("Ciao! Sono <prosody rate=\"slow\">Aldo</prosody>. Posso aiutarti a creare servizi su Azure.".ToSpeech(), reprompt);
+            var response = ResponseBuilder.Ask("Ciao! Sono <prosody rate=\"slow\">Aldo</prosody> , il tuo aiuto DevOps.".ToSpeech(), reprompt);
             response.Response.ShouldEndSession = false;
 
             return response;
@@ -140,7 +145,7 @@ namespace CodemotionRome19.Functions
 
         static SkillResponse HandleHelpIntent(IntentRequest request, Session session, ILogger log)
         {
-            var response = ResponseBuilder.Tell("<p>Ad esempio prova a dirmi <s>Crea un App Service</s></p> <p>Oppure, <s>Deploya Cosmos DB</s></p>".ToSpeech());
+            var response = ResponseBuilder.Tell($"Ad esempio prova a dirmi {BreakStrong} 'Crea un App Service'. Oppure, {BreakStrong} 'Deploya Cosmos DB'.".ToSpeech());
             response.Response.ShouldEndSession = false;
             return response;
         }
@@ -151,7 +156,7 @@ namespace CodemotionRome19.Functions
             {
                 OutputSpeech = new PlainTextOutputSpeech
                 {
-                    Text = "Desideri ancora creare un servizio Azure?"
+                    Text = "Desideri ancora creare un servizio su Azure?"
                 }
             };
             session.Attributes.Clear();
@@ -186,24 +191,15 @@ namespace CodemotionRome19.Functions
 
             if (!arType.TryParseAzureResourceType(out var azureResourceType, log))
             {
-                var reprompt = new Reprompt
-                {
-                    OutputSpeech = new PlainTextOutputSpeech
-                    {
-                        Text = "Che tipo di risorsa desideri creare?"
-                    }
-                };
-
-                response = ResponseBuilder.Ask("<p>Non ho capito che tipo di risorsa vuoi creare.</p> <p>Devi specificare un servizio Azure valido.</p> <p>Dimmelo di nuovo per favore.</p>".ToSpeech(), reprompt);
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Che tipo di risorsa desideri creare?" } };
+                response = ResponseBuilder.Ask($"Non ho capito che tipo di risorsa vuoi creare. {BreakStrong} Devi specificare un servizio Azure valido. {BreakStrong} Dimmelo di nuovo.".ToSpeech(), reprompt);
             }
             else
             {
-                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Scusa, vuoi dare un nome alla nuova risorsa?" } };
-
                 session.Attributes.Add(Slots.AzureResourceType, JsonConvert.SerializeObject(azureResourceType));
                 session.Attributes["state"] = States.AskForResourceName;
-
-                response = ResponseBuilder.Ask($"<p>Ho capito che vuoi creare la risorsa <break/>{azureResourceType.Name}</p> Vuoi dargli un nome?".ToSpeech(), reprompt, session);           
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Scusa, vuoi dare un nome alla nuova risorsa?" } };
+                response = ResponseBuilder.Ask($"Ho capito che vuoi creare la risorsa {BreakStrong} {azureResourceType.Name}. Vuoi dargli un nome?".ToSpeech(), reprompt, session);           
             }
 
             return response;
@@ -227,20 +223,15 @@ namespace CodemotionRome19.Functions
             if (request.Intent.Name == Intents.YesIntent)
             {
                 session.Attributes["state"] = States.SetResourceName;
-
                 reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi come la devo chiamare?" } };
-
                 response = ResponseBuilder.Ask("Che nome vuoi dargli?", reprompt, session);
             }
             else
             {
                 var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
-
                 session.Attributes["state"] = States.CreateResource;
-
                 reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
-
-                response = ResponseBuilder.Ask($"Sto per creare la risorsa <break/>{azureResourceType.Name}. Confermi?".ToSpeech(), reprompt, session);
+                response = ResponseBuilder.Ask($"Sto per creare la risorsa {BreakStrong} {azureResourceType.Name}. Confermi?".ToSpeech(), reprompt, session);                
             }
 
             return response;
@@ -265,10 +256,8 @@ namespace CodemotionRome19.Functions
             session.Attributes[Slots.AzureResourceName] = arName;
             session.Attributes["state"] = States.CreateResource;
 
-            var reprompt = new Reprompt{ OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
-
-            var response = ResponseBuilder.Ask($"<p>Sto per creare la risorsa <break/>{azureResourceType.Name}, con il nome <break/>{arName}.</p> <p>Confermi?</p>".ToSpeech(), reprompt, session);
-            
+            var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Quindi confermi?" } };
+            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {BreakStrong} {azureResourceType.Name}, con il nome {BreakStrong} {arName}. Confermi?".ToSpeech(), reprompt, session);           
             return response;
         }
 
@@ -282,65 +271,76 @@ namespace CodemotionRome19.Functions
                    session.Attributes.ContainsValue(States.CreateResource);
         }
 
-        static async Task<SkillResponse> HandleCreateResourceIntent(IntentRequest request, Session session, 
-            IAsyncCollector<AzureResourceToDeploy> deployQueue, ILogger log)
+        static async Task<SkillResponse> HandleCreateResourceIntent(IntentRequest request, Session session, IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue)
         {
             SkillResponse response;
 
             if (request.Intent.Name == Intents.YesIntent)
             {
                 var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
-                var arName = session.Attributes.ContainsKey(Slots.AzureResourceName) ? (string)session.Attributes[Slots.AzureResourceName] : null;
 
-                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Vuoi creare un altro servizio?" } };
-
-                session.Attributes.Remove(Slots.AzureResourceType);
-                session.Attributes.Remove(Slots.AzureResourceName);
-                session.Attributes["state"] = States.AskForAnotherDeploy;
-
-                response = ResponseBuilder.Ask(arName is null ? $"<p>OK, creo la risorsa <s>{azureResourceType.Name}</s></p> <p>Ti avviserò con una notifica appena terminato!</p>".ToSpeech() : 
-                    $"<p>OK, creo la risorsa <s>{azureResourceType.Name}</s> che si chiama <s>{arName}</s></p> <p>Ti avviserò con una notifica appena terminato!</p>".ToSpeech(), reprompt, session);
-
-                var azureResourceToDeploy = new AzureResourceToDeploy
+                if (azureResourceType.Id == AzureResourceTypes.Functions.Id)
                 {
-                    AzureResource = new AzureResource
-                    {
-                        Type = azureResourceType,
-                        Name = arName
-                    },
-                    RequestedByUser = session.User.UserId
-                };
-
-                await deployQueue.AddAsync(azureResourceToDeploy);
+                    session.Attributes["state"] = States.AskForDeployProject;
+                    var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Desideri anche fare il deploy di un progetto?" } };
+                    response = ResponseBuilder.Ask("Bene! Vuoi anche fare il deploy di un progetto sulla nuova risorsa?", reprompt, session);
+                }
+                else
+                {
+                    response = await StartResourceCreation(session, resourceDeployQueue);
+                }
             }
             else
             {
-                var reprompt = new Reprompt
-                {
-                    OutputSpeech = new PlainTextOutputSpeech
-                    {
-                        Text = "Che tipo di risorsa desideri creare?"
-                    }
-                };
-
                 session.Attributes.Clear();
-                response = ResponseBuilder.Ask("Ah ok, forse allora ho capito male. <p>Cosa desidere creare?</p>".ToSpeech(), reprompt, session);                
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Che tipo di risorsa desideri creare?" } };
+                response = ResponseBuilder.Ask("Ah ok, forse allora ho capito male. Cosa desidere creare?", reprompt, session);                
             }
+
+            return response;
+        }
+
+        #endregion
+
+        #region Ask for deploy project
+
+        static bool CanHandleAskForDeployProjectIntent(IntentRequest request, Session session)
+        {
+            return (request.Intent.Name == Intents.YesIntent || request.Intent.Name == Intents.NoIntent) &&
+                   session.Attributes.ContainsValue(States.AskForDeployProject);
+        }
+
+        static async Task<SkillResponse> HandleAskForDeployProjectIntent(IntentRequest request, Session session,
+            IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue,
+            ILogger log)
+        {
+            SkillResponse response;
+
+            if (request.Intent.Name == Intents.YesIntent)
+            {
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Di quale progetto vuoi fare il deploy?" } };
+                session.Attributes.Remove("state");
+                response = ResponseBuilder.Ask($"Bene! {BreakStrong} Che progetto vuoi deployare?".ToSpeech(), reprompt, session);
+            }
+            else
+            {
+                response = await StartResourceCreation(session, resourceDeployQueue);
+            }            
 
             return response;
         }
 
         #endregion 
 
-        #region Ask for another deploy
+        #region Ask for another resource
 
-        static bool CanHandleAskForAnotherDeployIntent(IntentRequest request, Session session)
+        static bool CanHandleAskForAnotherResourceIntent(IntentRequest request, Session session)
         {
             return (request.Intent.Name == Intents.YesIntent || request.Intent.Name == Intents.NoIntent) &&
-                   session.Attributes.ContainsValue(States.AskForAnotherDeploy);
+                   session.Attributes.ContainsValue(States.AskForAnotherResource);
         }
 
-        static SkillResponse HandleAskForAnotherDeployIntent(IntentRequest request, Session session, ILogger log)
+        static SkillResponse HandleAskForAnotherResourceIntent(IntentRequest request, Session session, ILogger log)
         {
             SkillResponse response;
 
@@ -354,6 +354,74 @@ namespace CodemotionRome19.Functions
             }
             else
                 response = ResponseBuilder.Tell("OK, ci vediamo al prossimo deploy!");       
+
+            return response;
+        }
+
+        #endregion
+
+        #region Deploy Project
+
+        static bool CanHandleDeployProjectIntent(IntentRequest request, Session session)
+        {
+            return request.Intent.Name == Intents.DeployProjectIntent;
+        }
+
+        static async Task<SkillResponse> HandleDeployProjectIntent(IntentRequest request, Session session, 
+            IAsyncCollector<ProjectToDeploy> projectDeployQueue,
+            IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue)
+        {
+            SkillResponse response;
+
+            if (request.DialogState != States.DialogComplete)
+            {
+                //response = ResponseBuilder.DialogElicitSlot(new PlainTextOutputSpeech { Text = "Come si chiama il progetto?" }, Slots.ProjectName);
+                response = ResponseBuilder.DialogDelegate(session);
+            }
+            else if(request.DialogState == States.DialogComplete && request.Intent.ConfirmationStatus == States.IntentConfirmed)
+            {
+                var projectSlotValue = request.Intent.Slots[Slots.ProjectName].Resolution.Authorities.First().Values.First().Value;
+
+                var projectToDeploy = new ProjectToDeploy
+                {
+                    Id = projectSlotValue.Id,
+                    ProjectName = projectSlotValue.Name,
+                    PipelineName = projectSlotValue.Name,
+                    RequestedByUser = session.User.UserId
+                };
+
+                const string notify = "Ti avviserò con una notifica appena terminato!";
+
+                if (session.Attributes != null && session.Attributes.ContainsKey(Slots.AzureResourceType))
+                {
+                    var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
+                    var arName = session.Attributes.ContainsKey(Slots.AzureResourceName) ? (string)session.Attributes[Slots.AzureResourceName] : null;
+
+                    var azureResourceToDeploy = new AzureResourceToDeploy
+                    {
+                        AzureResource = new AzureResource
+                        {
+                            Type = azureResourceType,
+                            Name = arName
+                        },
+                        RequestedByUser = session.User.UserId,
+                        Project = projectToDeploy
+                    };
+
+                    response = ResponseBuilder.Tell($"OK, creo la risorsa {BreakStrong} {azureResourceType.Name} e deployo il progetto {BreakStrong} {projectSlotValue.Name}. {notify}".ToSpeech());
+                    await resourceDeployQueue.AddAsync(azureResourceToDeploy);
+                }
+                else
+                {
+                    response = ResponseBuilder.Tell($"OK, deployo il progetto {BreakStrong} {projectSlotValue.Name}.".ToSpeech());
+                    await projectDeployQueue.AddAsync(projectToDeploy);
+                }                                
+            }
+            else
+            {
+                var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Dimmi come si chiama il progetto?" } };
+                response = ResponseBuilder.Ask("Scusa ma non ho capito. Come si chiama il progetto?", reprompt, session);
+            }
 
             return response;
         }
@@ -372,7 +440,40 @@ namespace CodemotionRome19.Functions
                 }
             };
 
-            var response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare. Devi specificare un servizio Azure valido. <p>Per favore, dimmelo di nuovo.</p>".ToSpeech(), reprompt);
+            var response = ResponseBuilder.Ask("Non ho capito che tipo di risorsa vuoi creare. Per favore, dimmelo di nuovo.".ToSpeech(), reprompt);
+            return response;
+        }
+
+        #endregion
+
+        #region Commons
+
+        static async Task<SkillResponse> StartResourceCreation(Session session, IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue)
+        {
+            var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
+            var arName = session.Attributes.ContainsKey(Slots.AzureResourceName) ? (string)session.Attributes[Slots.AzureResourceName] : null;
+
+            session.Attributes["state"] = States.AskForAnotherResource;
+
+            var reprompt = new Reprompt { OutputSpeech = new PlainTextOutputSpeech { Text = "Vuoi creare un altro servizio?" } };
+
+            const string notify = "Ti avviserò con una notifica appena terminato!";
+            var message = arName is null ? $"OK, creo la risorsa {BreakStrong} {azureResourceType.Name}. {notify}".ToSpeech()
+                : $"OK, creo la risorsa {BreakStrong} {azureResourceType.Name} che si chiama {BreakStrong} {arName}. {notify}".ToSpeech();
+
+            var response = ResponseBuilder.Ask(message, reprompt, session);
+
+            var azureResourceToDeploy = new AzureResourceToDeploy
+            {
+                AzureResource = new AzureResource
+                {
+                    Type = azureResourceType,
+                    Name = arName
+                },
+                RequestedByUser = session.User.UserId
+            };
+
+            await resourceDeployQueue.AddAsync(azureResourceToDeploy);
             return response;
         }
 
