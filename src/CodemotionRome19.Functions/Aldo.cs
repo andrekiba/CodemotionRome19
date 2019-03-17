@@ -404,12 +404,12 @@ namespace CodemotionRome19.Functions
                                   $"e deployo il progetto {Break} {projectSlot.Value}. {Notify}").ToSsmlSpeech();
 
                     response = ResponseBuilder.Tell(message);
-                    //await resourceDeployQueue.AddAsync(ard);
+                    await resourceDeployQueue.AddAsync(ard);
                 }
                 else
                 {
                     response = ResponseBuilder.Tell($"OK, deployo il progetto {BreakMedium} {projectSlot.Value}. {Notify}".ToSsmlSpeech());
-                    //await projectDeployQueue.AddAsync(projectToDeploy);
+                    await projectDeployQueue.AddAsync(projectToDeploy);
                 }                                
             }
             else
@@ -460,7 +460,7 @@ namespace CodemotionRome19.Functions
                 RequestedByUser = session.User.UserId
             };
 
-            //await resourceDeployQueue.AddAsync(azureResourceToDeploy);
+            await resourceDeployQueue.AddAsync(azureResourceToDeploy);
             return response;
         }
 
