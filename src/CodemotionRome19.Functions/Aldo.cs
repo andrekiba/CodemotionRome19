@@ -368,8 +368,8 @@ namespace CodemotionRome19.Functions
                 //response = ResponseBuilder.DialogElicitSlot(new PlainTextOutputSpeech { Text = "Come si chiama il progetto?" }, Slots.ProjectName);
                 response = ResponseBuilder.DialogDelegate(session);
             }
-            else if (request.DialogState == States.DialogComplete)
-            //else if(request.DialogState == States.DialogComplete && request.Intent.ConfirmationStatus == States.IntentConfirmed)
+            //else if (request.DialogState == States.DialogComplete)
+            else if(request.DialogState == States.DialogComplete && request.Intent.ConfirmationStatus == States.IntentConfirmed)
             {
                 //Console.WriteLine(request.Intent.Slots[Slots.ProjectName].Dump());
                 var projectSlot = request.Intent.Slots[Slots.ProjectName];
