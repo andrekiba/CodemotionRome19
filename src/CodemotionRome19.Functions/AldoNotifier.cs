@@ -10,6 +10,7 @@ using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Core.AzureDevOps;
 using CodemotionRome19.Core.Base;
+using CodemotionRome19.Functions.Extensions;
 using Serilog;
 
 namespace CodemotionRome19.Functions
@@ -17,12 +18,11 @@ namespace CodemotionRome19.Functions
     public class AldoNotifier
     {
         #region Fields
-
-        const string BreakStrong = "<break strength=\"strong\"/>";
-
+        
         readonly IConfiguration configuration;
         readonly INotificationService notificationService;
         readonly IAzureDevOpsService azureDevOpsService;
+        readonly ILogger log;
 
         #endregion 
 
@@ -31,17 +31,16 @@ namespace CodemotionRome19.Functions
             this.configuration = configuration;
             this.notificationService = notificationService;
             this.azureDevOpsService = azureDevOpsService;
+
+            log = new LoggerConfiguration()
+                .WriteTo.AzureTableStorage(configuration.GetValue("AzureWebJobsStorage"), storageTableName: $"{nameof(AldoNotifier)}Log")
+                .CreateLogger();
         }
 
         [FunctionName("AldoNotifier")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req)
         {
-            var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            var log = new LoggerConfiguration()
-                .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoNotifierLog")
-                .CreateLogger();
-
             try
             {
                 var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -58,8 +57,8 @@ namespace CodemotionRome19.Functions
                         var deployment = release.deployment;
                         var project = release.project;
                         var ok = deployment.deploymentStatus == "succeeded";
-                        message = $"Aldo. Deployment del progetto {project.name} in {release.environment.name} " +
-                                  $"{(ok ? "terminato con successo!" : "fallito!")}";
+                        message = $"Aldo. Il deploy del progetto {S.Break} {project.name} in {S.Break} {release.environment.name} " +
+                                  $"{(ok ? "è terminato con successo!" : "è fallito!")}";
                         userToNotify = await azureDevOpsService.GetReleaseRequestor(project.id.ToString(), Convert.ToInt32(deployment.release.id.ToString()));
                         break;
                     }
@@ -68,7 +67,7 @@ namespace CodemotionRome19.Functions
                         var build = data.resource;
                         var project = build.definition.project;
                         var ok = build.result == "succeeded";
-                        message = $"Aldo. Build {build.buildNumber} del progetto {project.name} {(ok ? "terminata con successo!" : "fallita!")}";
+                        message = $"Aldo. Build <say-as interpret-as=\"digits\">{build.buildNumber}</say-as> del progetto {S.Break} {project.name} {(ok ? "terminata con successo!" : "fallita!")}";
                         userToNotify = await azureDevOpsService.GetBuildRequestor(project.id.ToString(), Convert.ToInt32(build.id.ToString()));
                         break;
                     }
@@ -81,6 +80,8 @@ namespace CodemotionRome19.Functions
                     if (notificationResult.IsFailure)
                         log.Error(notificationResult.Error);
                 }
+                else
+                    log.Error(userToNotify.Error);
 
                 return new OkResult();
             }

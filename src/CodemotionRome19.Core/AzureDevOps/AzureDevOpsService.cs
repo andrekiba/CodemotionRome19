@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
@@ -158,11 +159,11 @@ namespace CodemotionRome19.Core.AzureDevOps
                 using (var connection = new VssConnection(devOpsUri, creds))
                 using (var rClient = await connection.GetClientAsync<ReleaseHttpClient2>())
                 {
-                    var release = await rClient.GetReleaseAsync(idProject, idRelease);
+                    var release = await rClient.GetReleaseAsync(idProject, idRelease, propertyFilters: new List<string>{"RequestedByUser"});
 
                     return release.Properties.TryGetValue("RequestedByUser", out var requestedByUser) ?
                         Result.Ok(requestedByUser.ToString()) : 
-                        Result.Fail<string>("RequestedByUser not found");
+                        Result.Fail<string>($"RequestedByUser not found. Release {release.Name} for Project {release.ProjectReference.Name}");
                 }                
             }
             catch (Exception e)
@@ -180,10 +181,11 @@ namespace CodemotionRome19.Core.AzureDevOps
                 using (var bClient = await connection.GetClientAsync<BuildHttpClient>())
                 {
                     var build = await bClient.GetBuildAsync(idProject, idBuild);
+                    var buildProps = await bClient.GetBuildPropertiesAsync(idProject, idBuild);
 
-                    return build.Properties.TryGetValue("RequestedByUser", out var requestedByUser) ? 
+                    return buildProps.TryGetValue("RequestedByUser", out var requestedByUser) ? 
                         Result.Ok(requestedByUser.ToString()) :
-                        Result.Fail<string>("RequestedByUser not found");
+                        Result.Fail<string>($"RequestedByUser not found. Build {build.BuildNumber} for Project {build.Project.Name}");
                 }
             }
             catch (Exception e)

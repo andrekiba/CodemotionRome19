@@ -17,6 +17,7 @@ namespace CodemotionRome19.Functions
         readonly IConfiguration configuration;
         readonly INotificationService notificationService;
         readonly IAzureDevOpsService azureDevOpsService;
+        readonly ILogger log;
 
         #endregion 
 
@@ -25,16 +26,15 @@ namespace CodemotionRome19.Functions
             this.configuration = configuration;
             this.notificationService = notificationService;
             this.azureDevOpsService = azureDevOpsService;
+
+            log = new LoggerConfiguration()
+                .WriteTo.AzureTableStorage(configuration.GetValue("AzureWebJobsStorage"), storageTableName: $"{nameof(AldoProjectDeployer)}Log")
+                .CreateLogger();
         }
 
         [FunctionName("AldoProjectDeployer")]
         public async Task Run([QueueTrigger("project-deploy", Connection = "AzureWebJobsStorage")]ProjectToDeploy pd)
         {
-            var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
-            var log = new LoggerConfiguration()
-                .WriteTo.AzureTableStorage(connectionString, storageTableName: "AldoProjectDeployerLog")
-                .CreateLogger();
-
             try
             {
                 var releaseTrigger = await azureDevOpsService.TriggerRelease(pd);
