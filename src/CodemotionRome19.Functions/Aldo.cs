@@ -22,12 +22,7 @@ namespace CodemotionRome19.Functions
 {
     public class Aldo
     {
-        #region Fields
-
-        const string BreakStrong = "<break strength=\"strong\"/>";
-        const string BreakMedium = "<break strength=\"medium\"/>";
-        const string Break = "<break/>";
-        const string Notify = "Ti avviserò con una notifica appena terminato!";
+        #region Field
 
         readonly IConfiguration configuration;
 
@@ -41,7 +36,8 @@ namespace CodemotionRome19.Functions
         [FunctionName("Aldo")]
         public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req,
             [Queue("azure-resource-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue,
-            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue)
+            [Queue("project-deploy", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToDeploy> projectDeployQueue,
+            [Queue("project-build", Connection = "AzureWebJobsStorage")] IAsyncCollector<ProjectToBuild> projectBuildQueue)
         {
             var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
             //var tableName = Environment.GetEnvironmentVariable("deployLog", EnvironmentVariableTarget.Process);
@@ -98,6 +94,9 @@ namespace CodemotionRome19.Functions
                     case IntentRequest intentRequest when CanHandleDeployProjectIntent(intentRequest, session):
                         response = await HandleDeployProjectIntent(intentRequest, session, projectDeployQueue, resourceDeployQueue);
                         break;
+                    case IntentRequest intentRequest when CanHandleBuildProjectIntent(intentRequest, session):
+                        response = await HandleBuildProjectIntent(intentRequest, session, projectBuildQueue);
+                        break;
                     case IntentRequest intentRequest: //Unhandled
                         response = HandleUnhandled(intentRequest);
                         break;
@@ -122,7 +121,7 @@ namespace CodemotionRome19.Functions
 
         static SkillResponse HandleLaunchRequest(LaunchRequest request, Session session)
         {            
-            var reprompt = new Repr($"Ad esempio puoi dirmi, {BreakStrong} Crea una Function App. Oppure, {BreakStrong} Deploya il progetto Super Segreto.".ToSsmlSpeech());
+            var reprompt = new Repr($"Ad esempio puoi dirmi, {S.BreakStrong} Crea una Function App. Oppure, {S.BreakStrong} Deploya il progetto Super Segreto.".ToSsmlSpeech());
             var response = ResponseBuilder.Ask("Ciao! Sono Aldo, il tuo aiuto DevOps.".ToSsmlSpeech(), reprompt);
             response.Response.ShouldEndSession = false;
             return response;
@@ -140,7 +139,7 @@ namespace CodemotionRome19.Functions
 
         static SkillResponse HandleHelpIntent(IntentRequest request, Session session)
         {
-            var response = ResponseBuilder.Tell($"Ad esempio prova a dirmi {BreakStrong} Crea un App Service. Oppure, {BreakStrong} Fai il deploy del progetto Round.".ToSsmlSpeech());
+            var response = ResponseBuilder.Tell($"Ad esempio prova a dirmi {S.BreakStrong} Crea un App Service. Oppure, {S.BreakStrong} Fai il deploy del progetto Round.".ToSsmlSpeech());
             response.Response.ShouldEndSession = false;
             return response;
         }
@@ -182,8 +181,8 @@ namespace CodemotionRome19.Functions
             {
                 var reprompt = new Repr("Che tipo di risorsa desideri creare?");
                 response = ResponseBuilder.Ask(("Non ho capito che tipo di risorsa vuoi creare. " +
-                                               $"{BreakStrong} Devi specificare un servizio Azure valido. " +
-                                               $"{BreakStrong} Per favore, {BreakStrong} puoi dirmelo di nuovo?").ToSsmlSpeech(), reprompt);
+                                               $"{S.BreakStrong} Devi specificare un servizio Azure valido. " +
+                                               $"{S.BreakStrong} Per favore, {S.BreakStrong} puoi dirmelo di nuovo?").ToSsmlSpeech(), reprompt);
             }
             else
             {
@@ -222,7 +221,7 @@ namespace CodemotionRome19.Functions
                 var azureResourceType = JsonConvert.DeserializeObject<AzureResourceType>(session.Attributes[Slots.AzureResourceType].ToString());
                 session.Attributes["state"] = States.CreateResource;
                 reprompt = new Repr("Quindi confermi?");
-                response = ResponseBuilder.Ask($"Sto per creare la risorsa {BreakMedium} {azureResourceType.Name}. Confermi?".ToSsmlSpeech(), reprompt, session);                
+                response = ResponseBuilder.Ask($"Sto per creare la risorsa {S.BreakMedium} {azureResourceType.Name}. Confermi?".ToSsmlSpeech(), reprompt, session);                
             }
 
             return response;
@@ -248,7 +247,7 @@ namespace CodemotionRome19.Functions
             session.Attributes["state"] = States.CreateResource;
 
             var reprompt = new Repr("Quindi confermi?");
-            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {BreakMedium} {azureResourceType.Name}, con il nome {arName}. Confermi?".ToSsmlSpeech(), reprompt, session);           
+            var response = ResponseBuilder.Ask($"Sto per creare la risorsa {S.BreakMedium} {azureResourceType.Name}, con il nome {arName}. Confermi?".ToSsmlSpeech(), reprompt, session);           
             return response;
         }
 
@@ -275,7 +274,7 @@ namespace CodemotionRome19.Functions
                 {
                     session.Attributes["state"] = States.AskForDeployProject;
                     var reprompt = new Repr("Desideri anche fare il deploy di un progetto?");
-                    response = ResponseBuilder.Ask($"Bene! {BreakStrong} Vuoi anche fare il deploy di un progetto sulla tua nuova risorsa?".ToSsmlSpeech(), reprompt, session);
+                    response = ResponseBuilder.Ask($"Bene! {S.BreakStrong} Vuoi anche fare il deploy di un progetto sulla tua nuova risorsa?".ToSsmlSpeech(), reprompt, session);
                 }
                 else
                 {
@@ -311,7 +310,7 @@ namespace CodemotionRome19.Functions
             {
                 var reprompt = new Repr("Di quale progetto vuoi fare il deploy?");
                 session.Attributes.Remove("state");
-                response = ResponseBuilder.Ask($"Molto bene! {BreakStrong} Come si chiama il progetto?".ToSsmlSpeech(), reprompt, session);
+                response = ResponseBuilder.Ask($"Molto bene! {S.BreakStrong} Come si chiama il progetto?".ToSsmlSpeech(), reprompt, session);
             }
             else
             {
@@ -400,17 +399,62 @@ namespace CodemotionRome19.Functions
                     };
                     ard.Project.FromNewResource = true;
 
-                    var message = ($"OK, creo la risorsa {Break} {arName ?? azureResourceType.Name} " +
-                                  $"e deployo il progetto {Break} {projectSlot.Value}. {Notify}").ToSsmlSpeech();
+                    var message = ($"OK, creo la risorsa {S.Break} {arName ?? azureResourceType.Name} " +
+                                  $"e deployo il progetto {S.Break} {projectSlot.Value}. {S.Notify}").ToSsmlSpeech();
 
                     response = ResponseBuilder.Tell(message);
                     await resourceDeployQueue.AddAsync(ard);
                 }
                 else
                 {
-                    response = ResponseBuilder.Tell($"OK, deployo il progetto {BreakMedium} {projectSlot.Value}. {Notify}".ToSsmlSpeech());
+                    response = ResponseBuilder.Tell($"OK, deployo il progetto {S.BreakMedium} {projectSlot.Value}. {S.Notify}".ToSsmlSpeech());
                     await projectDeployQueue.AddAsync(projectToDeploy);
                 }                                
+            }
+            else
+            {
+                var reprompt = new Repr("Dimmi come si chiama il progetto?");
+                response = ResponseBuilder.Ask("Mmm forse non ho capito. Come si chiama il progetto?", reprompt, session);
+            }
+
+            return response;
+        }
+
+        #endregion
+
+        #region Build Project
+
+        static bool CanHandleBuildProjectIntent(IntentRequest request, Session session)
+        {
+            return request.Intent.Name == Intents.BuildProjectIntent;
+        }
+
+        static async Task<SkillResponse> HandleBuildProjectIntent(IntentRequest request, Session session,
+            IAsyncCollector<ProjectToBuild> projectBuildQueue)
+        {
+            SkillResponse response;
+
+            if (request.DialogState != States.DialogComplete)
+            {
+                //response = ResponseBuilder.DialogElicitSlot(new PlainTextOutputSpeech { Text = "Come si chiama il progetto?" }, Slots.ProjectName);
+                response = ResponseBuilder.DialogDelegate(session);
+            }
+            //else if (request.DialogState == States.DialogComplete)
+            else if (request.DialogState == States.DialogComplete && request.Intent.ConfirmationStatus == States.IntentConfirmed)
+            {
+                var projectSlot = request.Intent.Slots[Slots.ProjectName];
+                var projectSlotValue = projectSlot.Resolution.Authorities.First().Values.First().Value;
+
+                var projectToBuild = new ProjectToBuild
+                {
+                    Id = projectSlotValue.Id,
+                    ProjectName = projectSlot.Value,
+                    PipelineName = projectSlotValue.Name,
+                    RequestedByUser = session.User.UserId
+                };
+
+                response = ResponseBuilder.Tell($"OK, buildo il progetto {S.BreakMedium} {projectSlot.Value}. {S.Notify}".ToSsmlSpeech());
+                await projectBuildQueue.AddAsync(projectToBuild);                
             }
             else
             {
@@ -445,8 +489,8 @@ namespace CodemotionRome19.Functions
 
             var reprompt = new Repr("Vuoi creare un altro servizio?");
 
-            var message = arName is null ? $"OK, creo la risorsa {Break} {azureResourceType.Name}. {BreakStrong} {Notify}".ToSsmlSpeech()
-                : $"OK, creo la risorsa {Break} {arName}. {BreakStrong} {Notify}".ToSsmlSpeech();
+            var message = arName is null ? $"OK, creo la risorsa {S.Break} {azureResourceType.Name}. {S.BreakStrong} {S.Notify}".ToSsmlSpeech()
+                : $"OK, creo la risorsa {S.Break} {arName}. {S.BreakStrong} {S.Notify}".ToSsmlSpeech();
 
             var response = ResponseBuilder.Ask(message, reprompt, session);
 

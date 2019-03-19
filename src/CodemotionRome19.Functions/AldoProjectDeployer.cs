@@ -4,6 +4,7 @@ using CodemotionRome19.Core.AzureDevOps;
 using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
+using CodemotionRome19.Functions.Extensions;
 using Microsoft.Azure.WebJobs;
 using Serilog;
 
@@ -12,8 +13,6 @@ namespace CodemotionRome19.Functions
     public class AldoProjectDeployer
     {
         #region Fields
-
-        const string BreakStrong = "<break strength=\"strong\"/>";
 
         readonly IConfiguration configuration;
         readonly INotificationService notificationService;
@@ -40,17 +39,17 @@ namespace CodemotionRome19.Functions
             {
                 var releaseTrigger = await azureDevOpsService.TriggerRelease(pd);
 
-                if (!pd.FromNewResource)
-                {
-                    var notificationMessage = releaseTrigger.IsSuccess ?
-                        $"Aldo. Sto deployando il progetto {BreakStrong} {pd.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps."
-                        : $"Aldo. C'è stato une errore durante il deploy del progetto {BreakStrong} {pd.ProjectName}.";
+                //if (!pd.FromNewResource)
+                //{
+                //    var notificationMessage = releaseTrigger.IsSuccess ?
+                //        $"Aldo. Sto deployando il progetto {S.BreakMedium} {pd.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps."
+                //        : $"Aldo. C'è stato une errore durante il deploy del progetto {S.BreakMedium} {pd.ProjectName}.";
 
-                    var notificationResult = await notificationService.SendUserNotification(pd.RequestedByUser, notificationMessage);
+                //    var notificationResult = await notificationService.SendUserNotification(pd.RequestedByUser, notificationMessage);
 
-                    if (notificationResult.IsFailure)
-                        log.Error(notificationResult.Error);
-                }                    
+                //    if (notificationResult.IsFailure)
+                //        log.Error(notificationResult.Error);
+                //}                    
             }
             catch (Exception e)
             {

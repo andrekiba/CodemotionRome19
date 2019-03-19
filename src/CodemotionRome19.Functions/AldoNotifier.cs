@@ -44,29 +44,35 @@ namespace CodemotionRome19.Functions
 
             try
             {
-                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 dynamic data = JsonConvert.DeserializeObject(requestBody);
                 string eventType = data.eventType;
-                Result<string> userToNotify = Result.Fail<string>("User not found");
-                string message = string.Empty;
+                var userToNotify = Result.Fail<string>("User not found");
+                var message = string.Empty;
 
-                if (eventType == "ms.vss-release.deployment-completed-event")
+                switch (eventType)
                 {
-                    string idProject = data.resource.project.id;
-                    var idRelease = Convert.ToInt32(data.resource.deployment.release.id);
-                    var ok = data.resource.deployment.deploymentStatus == "succeeded";
-                    message = $"Aldo. Deployment del progetto {data.resource.project.name} in {data.resource.deployment.releaseEnvironment.name} " +
-                              $"{(ok ? "terminato con successo!" : "fallito!")}";
-                    userToNotify = await azureDevOpsService.GetReleaseRequestor(idProject, idRelease);
+                    case "ms.vss-release.deployment-completed-event":
+                    {
+                        var release = data.resource;
+                        var deployment = release.deployment;
+                        var project = release.project;
+                        var ok = deployment.deploymentStatus == "succeeded";
+                        message = $"Aldo. Deployment del progetto {project.name} in {release.environment.name} " +
+                                  $"{(ok ? "terminato con successo!" : "fallito!")}";
+                        userToNotify = await azureDevOpsService.GetReleaseRequestor(project.id.ToString(), Convert.ToInt32(deployment.release.id.ToString()));
+                        break;
+                    }
+                    case "build.complete":
+                    {
+                        var build = data.resource;
+                        var project = build.definition.project;
+                        var ok = build.result == "succeeded";
+                        message = $"Aldo. Build {build.buildNumber} del progetto {project.name} {(ok ? "terminata con successo!" : "fallita!")}";
+                        userToNotify = await azureDevOpsService.GetBuildRequestor(project.id.ToString(), Convert.ToInt32(build.id.ToString()));
+                        break;
+                    }
                 }
-
-                //if (eventType == "build.complete")
-                //{
-                //    string idProject = ??;
-                //    var idBuild = Convert.ToInt32(data.resource.id);
-                //    message = data.message.text;
-                //    userToNotify = await azureDevOpsService.GetBuildRequestedBy(idProject, idBuild);
-                //}
 
                 if (userToNotify.IsSuccess)
                 {

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CodemotionRome19.Functions.Extensions
 {
-    internal static class RequestValidationExtensions
+    public static class RequestValidationExtensions
     {
         const int AllowedTimestampToleranceInSeconds = 150;
 
@@ -76,7 +76,7 @@ namespace CodemotionRome19.Functions.Extensions
         public static SsmlOutputSpeech P(this string text) => new SsmlOutputSpeech { Ssml = $"<p>{text}</p>" };
     }
 
-    internal static class SlotExtensions
+    public static class SlotExtensions
     {
         public static bool TryParseAzureResourceType(this Slot slot, out AzureResourceType azureResourceType)
         {
@@ -114,5 +114,13 @@ namespace CodemotionRome19.Functions.Extensions
 
             return dump;
         }
+    }
+
+    public static class S
+    {
+        public const string BreakStrong = "<break strength=\"strong\"/>";
+        public const string BreakMedium = "<break strength=\"medium\"/>";
+        public const string Break = "<break/>";
+        public const string Notify = "Ti avviserò con una notifica appena terminato!";
     }
 }

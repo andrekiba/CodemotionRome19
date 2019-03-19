@@ -5,6 +5,7 @@ using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
+using CodemotionRome19.Functions.Extensions;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;
 using Serilog;
@@ -14,8 +15,6 @@ namespace CodemotionRome19.Functions
     public class AldoResourceDeployer
     {
         #region Fields
-
-        const string BreakMedium = "<break strength=\"medium\"/>";
 
         readonly IConfiguration configuration;
         readonly IAzureService azureService;
@@ -61,8 +60,8 @@ namespace CodemotionRome19.Functions
                 {                    
                     if (ard.Project != null)
                     {
-                        notificationMessage = $"Aldo. Ho creato la risorsa {BreakMedium} {ard.AzureResource.Name}. " +
-                                              $"Ora sto deployando il progetto {BreakMedium} {ard.Project.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps.";
+                        notificationMessage = $"Aldo. Ho creato la risorsa {S.BreakMedium} {ard.AzureResource.Name}. " +
+                                              $"Ora sto deployando il progetto {S.BreakMedium} {ard.Project.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps.";
 
                         ard.Project.Variables.Add("ResourceName", deployResult.Value);
 
@@ -70,12 +69,12 @@ namespace CodemotionRome19.Functions
                     }
                     else
                     {
-                        notificationMessage = $"Aldo. Il deploy della risorsa {BreakMedium} {ard.AzureResource.Name} è andato a buon fine.";
+                        notificationMessage = $"Aldo. Il deploy della risorsa {S.BreakMedium} {ard.AzureResource.Name} è andato a buon fine.";
                     }
                 }
                 else
                 {
-                    notificationMessage = $"Aldo. Il deploy della risorsa {BreakMedium} {ard.AzureResource.Name} è fallito.";
+                    notificationMessage = $"Aldo. Il deploy della risorsa {S.BreakMedium} {ard.AzureResource.Name} è fallito.";
                 }
 
                 var notificationResult = await notificationService.SendUserNotification(ard.RequestedByUser, notificationMessage);

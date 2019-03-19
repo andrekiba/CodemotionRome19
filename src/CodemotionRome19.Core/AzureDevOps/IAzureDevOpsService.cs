@@ -6,7 +6,7 @@ namespace CodemotionRome19.Core.AzureDevOps
 {
     public interface IAzureDevOpsService
     {
-        Task<Result> TriggerBuild(ProjectToDeploy pd);
+        Task<Result> TriggerBuild(ProjectToBuild pb);
         Task<Result<string>> GetBuildRequestor(string idProject, int idBuild);
         Task<Result> TriggerRelease(ProjectToDeploy pd);
         Task<Result<string>> GetReleaseRequestor(string idProject, int idRelease);

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CodemotionRome19.Core.Base;
 using CodemotionRome19.Core.Configuration;
+using CodemotionRome19.Core.Models;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
@@ -27,7 +28,7 @@ namespace CodemotionRome19.Core.AzureDevOps
             creds = new VssBasicCredential("username", configuration.DevOpsToken);
         }
 
-        public async Task<Result> TriggerBuild(ProjectToDeploy pd)
+        public async Task<Result> TriggerBuild(ProjectToBuild pb)
         {
             try
             {
@@ -37,14 +38,13 @@ namespace CodemotionRome19.Core.AzureDevOps
                 {
                     #region Project
 
-                    var project = (await pClient.GetProjects()).Single(p => p.Id.ToString() == pd.Id);
-                    //GetProject("b59a6f1c-ab6f-4e8b-bdf5-8628bb1bf030");
+                    var project = (await pClient.GetProjects()).Single(p => p.Id.ToString() == pb.Id);
 
                     #endregion
 
                     #region Build
 
-                    var buildDefinition = (await bClient.GetDefinitionsAsync(project.Id)).Single(b => b.Name == pd.PipelineName);
+                    var buildDefinition = (await bClient.GetDefinitionsAsync(project.Id)).Single(b => b.Name == pb.PipelineName);
 
                     var newBuild = new Build
                     {
@@ -54,7 +54,7 @@ namespace CodemotionRome19.Core.AzureDevOps
                         },
                         Project = buildDefinition.Project,
                     };
-                    newBuild.Properties.Add(nameof(pd.RequestedByUser), pd.RequestedByUser);
+                    newBuild.Properties.Add(nameof(pb.RequestedByUser), pb.RequestedByUser);
 
                     await bClient.QueueBuildAsync(newBuild);
 
@@ -160,9 +160,9 @@ namespace CodemotionRome19.Core.AzureDevOps
                 {
                     var release = await rClient.GetReleaseAsync(idProject, idRelease);
 
-                    if(release.Properties.TryGetValue("RequestedByUser", out var requestedByUser))
-                        return Result.Ok(requestedByUser.ToString());
-                    return Result.Fail<string>("RequestedByUser not found");
+                    return release.Properties.TryGetValue("RequestedByUser", out var requestedByUser) ?
+                        Result.Ok(requestedByUser.ToString()) : 
+                        Result.Fail<string>("RequestedByUser not found");
                 }                
             }
             catch (Exception e)
@@ -181,9 +181,9 @@ namespace CodemotionRome19.Core.AzureDevOps
                 {
                     var build = await bClient.GetBuildAsync(idProject, idBuild);
 
-                    if (build.Properties.TryGetValue("RequestedByUser", out var requestedByUser))
-                        return Result.Ok(requestedByUser.ToString());
-                    return Result.Fail<string>("RequestedByUser not found");
+                    return build.Properties.TryGetValue("RequestedByUser", out var requestedByUser) ? 
+                        Result.Ok(requestedByUser.ToString()) :
+                        Result.Fail<string>("RequestedByUser not found");
                 }
             }
             catch (Exception e)
