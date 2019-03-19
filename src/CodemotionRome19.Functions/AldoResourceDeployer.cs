@@ -15,7 +15,7 @@ namespace CodemotionRome19.Functions
     {
         #region Fields
 
-        const string BreakStrong = "<break strength=\"strong\"/>";
+        const string BreakMedium = "<break strength=\"medium\"/>";
 
         readonly IConfiguration configuration;
         readonly IAzureService azureService;
@@ -58,12 +58,11 @@ namespace CodemotionRome19.Functions
                 string notificationMessage;
 
                 if (deployResult.IsSuccess)
-                {
-                    
+                {                    
                     if (ard.Project != null)
                     {
-                        notificationMessage = $"Aldo. Ho creato la risorsa {BreakStrong} {ard.AzureResource.Name}. " +
-                                              $"Ora sto deployando il progetto {BreakStrong} {ard.Project.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps.";
+                        notificationMessage = $"Aldo. Ho creato la risorsa {BreakMedium} {ard.AzureResource.Name}. " +
+                                              $"Ora sto deployando il progetto {BreakMedium} {ard.Project.ProjectName}. Puoi seguirne lo stato sul portale Azure DevOps.";
 
                         ard.Project.Variables.Add("ResourceName", deployResult.Value);
 
@@ -71,12 +70,12 @@ namespace CodemotionRome19.Functions
                     }
                     else
                     {
-                        notificationMessage = $"Aldo. Il deploy della risorsa {BreakStrong} {ard.AzureResource.Name} è andato a buon fine.";
+                        notificationMessage = $"Aldo. Il deploy della risorsa {BreakMedium} {ard.AzureResource.Name} è andato a buon fine.";
                     }
                 }
                 else
                 {
-                    notificationMessage = $"Aldo. Il deploy della risorsa {BreakStrong} {ard.AzureResource.Name} è fallito.";
+                    notificationMessage = $"Aldo. Il deploy della risorsa {BreakMedium} {ard.AzureResource.Name} è fallito.";
                 }
 
                 var notificationResult = await notificationService.SendUserNotification(ard.RequestedByUser, notificationMessage);

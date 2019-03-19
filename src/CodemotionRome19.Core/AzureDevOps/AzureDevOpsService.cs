@@ -20,7 +20,6 @@ namespace CodemotionRome19.Core.AzureDevOps
         readonly Uri devOpsUri;
         readonly VssBasicCredential creds;
 
-
         public AzureDevOpsService(IConfiguration configuration)
         {
             this.configuration = configuration;
@@ -47,14 +46,17 @@ namespace CodemotionRome19.Core.AzureDevOps
 
                     var buildDefinition = (await bClient.GetDefinitionsAsync(project.Id)).Single(b => b.Name == pd.PipelineName);
 
-                    var build = await bClient.QueueBuildAsync(new Build
+                    var newBuild = new Build
                     {
                         Definition = new DefinitionReference
                         {
                             Id = buildDefinition.Id
                         },
-                        Project = buildDefinition.Project
-                    });
+                        Project = buildDefinition.Project,
+                    };
+                    newBuild.Properties.Add(nameof(pd.RequestedByUser), pd.RequestedByUser);
+
+                    await bClient.QueueBuildAsync(newBuild);
 
                     #endregion
                 }
@@ -104,20 +106,21 @@ namespace CodemotionRome19.Core.AzureDevOps
                         Description = "Created by Aldo",
                         Artifacts = new[]
                         {
-                        new ArtifactMetadata
-                        {
-                            Alias = primaryArtifact.Alias,
-                            InstanceReference = new BuildVersion
+                            new ArtifactMetadata
                             {
-                                Id = lastBuild.Id.ToString(),
-                                Name = lastBuild.BuildNumber
+                                Alias = primaryArtifact.Alias,
+                                InstanceReference = new BuildVersion
+                                {
+                                    Id = lastBuild.Id.ToString(),
+                                    Name = lastBuild.BuildNumber
+                                }
                             }
                         }
-                    }
                     };
 
                     var release = await rClient.CreateReleaseAsync(metadata, pd.Id);
-
+                    release.Properties.Add(nameof(pd.RequestedByUser), pd.RequestedByUser);
+                          
                     // Variables substitution
                     if (pd.Variables.Any())
                         foreach (var v in pd.Variables)
@@ -145,6 +148,48 @@ namespace CodemotionRome19.Core.AzureDevOps
             {
                 Console.WriteLine(e);
                 return Result.Fail(e.Message);
+            }
+        }
+
+        public async Task<Result<string>> GetReleaseRequestor(string idProject, int idRelease)
+        {
+            try
+            {
+                using (var connection = new VssConnection(devOpsUri, creds))
+                using (var rClient = await connection.GetClientAsync<ReleaseHttpClient2>())
+                {
+                    var release = await rClient.GetReleaseAsync(idProject, idRelease);
+
+                    if(release.Properties.TryGetValue("RequestedByUser", out var requestedByUser))
+                        return Result.Ok(requestedByUser.ToString());
+                    return Result.Fail<string>("RequestedByUser not found");
+                }                
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Result.Fail<string>(e.Message);
+            }
+        }
+
+        public async Task<Result<string>> GetBuildRequestor(string idProject, int idBuild)
+        {
+            try
+            {
+                using (var connection = new VssConnection(devOpsUri, creds))
+                using (var bClient = await connection.GetClientAsync<BuildHttpClient>())
+                {
+                    var build = await bClient.GetBuildAsync(idProject, idBuild);
+
+                    if (build.Properties.TryGetValue("RequestedByUser", out var requestedByUser))
+                        return Result.Ok(requestedByUser.ToString());
+                    return Result.Fail<string>("RequestedByUser not found");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Result.Fail<string>(e.Message);
             }
         }
     }
