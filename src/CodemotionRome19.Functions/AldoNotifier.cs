@@ -10,7 +10,7 @@ using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Notification;
 using CodemotionRome19.Core.AzureDevOps;
 using CodemotionRome19.Core.Base;
-using CodemotionRome19.Functions.Extensions;
+using CodemotionRome19.Functions.Alexa;
 using Serilog;
 
 namespace CodemotionRome19.Functions

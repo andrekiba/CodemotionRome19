@@ -7,6 +7,8 @@
         public const string CreateResource = "CreateResource";
         public const string AskForDeployProject = "AskForDeployProject";
         public const string AskForAnotherResource = "AskForAnotherResource";
+        public const string AskForAnotherDeploy = "AskForAnotherDeploy";
+        public const string AskForAnotherBuild = "AskForAnotherBuild";
 
         public const string DialogComplete = "COMPLETED";
         public const string DialogStarted = "STARTED";

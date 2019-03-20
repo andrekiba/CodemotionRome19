@@ -5,6 +5,7 @@ using CodemotionRome19.Core.Azure.Deployment;
 using CodemotionRome19.Core.Configuration;
 using CodemotionRome19.Core.Models;
 using CodemotionRome19.Core.Notification;
+using CodemotionRome19.Functions.Alexa;
 using CodemotionRome19.Functions.Extensions;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.WebJobs;

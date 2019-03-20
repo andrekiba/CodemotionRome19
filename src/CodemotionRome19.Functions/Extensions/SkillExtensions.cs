@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Alexa.NET.Request;
 using Alexa.NET.Response;
 using CodemotionRome19.Core.Azure;
 using CodemotionRome19.Core.Base;
+using CodemotionRome19.Functions.Alexa;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Build.WebApi;
 
 namespace CodemotionRome19.Functions.Extensions
 {
@@ -69,9 +71,20 @@ namespace CodemotionRome19.Functions.Extensions
             => Math.Abs(DateTimeOffset.Now.Subtract(timestamp).TotalSeconds) <= AllowedTimestampToleranceInSeconds;
     }
 
+    public static class LanguageExtensions
+    {
+        public static ILSpeech CreateLocale(this SkillRequest skillRequest, DictionaryLSpeechStore store)
+        {
+            var lSpeechFactory = new LSpeechFactory(store);
+            var locale = lSpeechFactory.Create(skillRequest);
+            return locale;
+        }
+    }
+
     public static class StringExtensions
     {
         public static SsmlOutputSpeech ToSsmlSpeech(this string text) => new SsmlOutputSpeech {Ssml = $"<speak>{text}</speak>" };
+        public static string ToSsmlString(this string text) => $"<speak>{text}</speak>" ;
 
         public static SsmlOutputSpeech P(this string text) => new SsmlOutputSpeech { Ssml = $"<p>{text}</p>" };
     }
@@ -116,11 +129,4 @@ namespace CodemotionRome19.Functions.Extensions
         }
     }
 
-    public static class S
-    {
-        public const string BreakStrong = "<break strength=\"strong\"/>";
-        public const string BreakMedium = "<break strength=\"medium\"/>";
-        public const string Break = "<break/>";
-        public const string Notify = "Ti avviserò con una notifica appena terminato!";
-    }
 }
