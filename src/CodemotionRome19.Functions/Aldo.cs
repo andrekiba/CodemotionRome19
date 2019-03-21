@@ -84,6 +84,9 @@ namespace CodemotionRome19.Functions
                 IAsyncCollector<ProjectToDeploy> projectDeployQueue,
                 IAsyncCollector<ProjectToBuild> projectBuildQueue)
         {
+            if (session.Attributes == null)
+                session.Attributes = new Dictionary<string, object>();
+
             SkillResponse response = null;
 
             switch (request)
@@ -203,9 +206,6 @@ namespace CodemotionRome19.Functions
 
         SkillResponse HandleSetResourceTypeIntent(IntentRequest request, Session session)
         {
-            if (session.Attributes == null)
-                session.Attributes = new Dictionary<string, object>();
-
             SkillResponse response;
 
             var slots = request.Intent.Slots;
@@ -355,9 +355,6 @@ namespace CodemotionRome19.Functions
             IAsyncCollector<ProjectToDeploy> projectDeployQueue,
             IAsyncCollector<AzureResourceToDeploy> resourceDeployQueue)
         {
-            if (session.Attributes == null)
-                session.Attributes = new Dictionary<string, object>();
-
             SkillResponse response;
 
             if (request.DialogState != States.DialogComplete)
@@ -429,9 +426,6 @@ namespace CodemotionRome19.Functions
         async Task<SkillResponse> HandleBuildProjectIntent(IntentRequest request, Session session,
             IAsyncCollector<ProjectToBuild> projectBuildQueue)
         {
-            if (session.Attributes == null)
-                session.Attributes = new Dictionary<string, object>();
-
             SkillResponse response;
 
             if (request.DialogState != States.DialogComplete)
@@ -663,8 +657,8 @@ namespace CodemotionRome19.Functions
                 [L.WichProject] = $"Molto bene! {S.BreakStrong} Come si chiama il progetto?".ToSsmlSpeech(),
                 [L.WichProjectRepr] = "Di quale progetto vuoi fare il deploy?",
                 [L.ProjectMisunderstood] = "Mmm forse non ho capito. Come si chiama il progetto?",
-                [L.ProjectMisunderstoodRepr] = "Come si chiama il progetto?",
-                [L.CreateResourceAndDeploy] = ($"OK, creo la risorsa {S.Break} {{0}} e deployo il progetto {S.Break} {{1}}. {S.Notify}").ToSsmlSpeech(),
+                [L.ProjectMisunderstoodRepr] = "Per favore, puo ridirmi come si chiama il progetto?",
+                [L.CreateResourceAndDeploy] = ($"OK, creo la risorsa {S.Break} {{0}} e faccio il deploy del progetto {S.Break} {{1}}. {S.Notify}").ToSsmlSpeech(),
                 [L.AskForAnotherResourceRepr] = "Vuoi creare un'altra risorsa su Azure?",
                 [L.AskForAnotherDeployRepr] = "Vuoi deployare un altro progetto?",
                 [L.AskForAnotherBuildRepr] = "Vuoi fare la build di un altro progetto?",
